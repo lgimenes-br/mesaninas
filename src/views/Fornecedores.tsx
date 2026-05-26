@@ -196,9 +196,9 @@ function FornecedorFormModal({ isOpen, onClose, fornecedorData, onSaveSuccess }:
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-end z-50">
-      <div className="h-full w-full max-w-xl bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-1/4 duration-200">
-        <div className="px-4 lg:px-6 py-4 border-b border-mesaninas-creme/50 flex justify-between items-center bg-mesaninas-creme/30 shrink-0 mt-safe">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+      <div className="w-[90vw] h-[90vh] overflow-hidden rounded-2xl bg-[#f4efdc] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="px-6 py-4 border-b border-mesaninas-creme/50 flex justify-between items-center bg-white/50 shrink-0">
           <div>
             <h3 className="font-serif font-bold text-lg text-mesaninas-green tracking-tight">
               {fornecedorData ? 'Editar Fornecedor' : 'Novo Fornecedor'}
@@ -209,186 +209,188 @@ function FornecedorFormModal({ isOpen, onClose, fornecedorData, onSaveSuccess }:
           </div>
           <button
             onClick={onClose}
-            className="text-mesaninas-green/50 hover:text-mesaninas-green text-2xl font-bold p-2 h-12 w-12 flex items-center justify-center -mr-2"
+            className="text-mesaninas-green/50 hover:text-mesaninas-green text-2xl font-bold p-2 h-12 w-12 flex items-center justify-center -mr-2 transition-colors"
+            title="Fechar"
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="flex-1 overflow-auto p-4 lg:p-6 space-y-6 bg-mesaninas-creme/10 pb-24">
-          
-          <div className="space-y-4 p-5 bg-white border border-mesaninas-creme/80 rounded-xl shadow-sm">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Dados Básicos</h4>
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 bg-white">
+          <form onSubmit={handleSave} className="w-full max-w-7xl mx-auto space-y-6" id="fornecedorForm">
             
-            <div>
-              <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">
-                Nome Fantasia / Razão Social*
-              </label>
-              <input
-                type="text"
-                required
-                value={nome}
-                onChange={e => setNome(e.target.value)}
-                className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                placeholder="Ex: Fruteira da Esquina"
-              />
-            </div>
+            <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Dados Básicos</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">
+                    Nome Fantasia / Razão Social*
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={nome}
+                    onChange={e => setNome(e.target.value)}
+                    className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                    placeholder="Ex: Fruteira da Esquina"
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1 flex justify-between items-center">
-                  <span>CNPJ / CPF*</span>
-                  {isSearchingCnpj && <span className="text-[10px] text-mesaninas-yellow font-bold animate-pulse">Carregando dados da empresa...</span>}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={cpfCnpj}
-                  onChange={e => setCpfCnpj(formatCpfCnpj(e.target.value))}
-                  onBlur={handleCnpjBlur}
-                  className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  placeholder="00.000.000/0000-00"
-                />
+                <div className="col-span-1">
+                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1 flex justify-between items-center">
+                    <span>CNPJ / CPF*</span>
+                    {isSearchingCnpj && <span className="text-[10px] text-mesaninas-yellow font-bold animate-pulse">Buscando...</span>}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={cpfCnpj}
+                    onChange={e => setCpfCnpj(formatCpfCnpj(e.target.value))}
+                    onBlur={handleCnpjBlur}
+                    className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                    placeholder="00.000.000/0000-00"
+                  />
+                </div>
+                
+                <div className="col-span-1">
+                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Telefone / WhatsApp*</label>
+                  <input
+                    type="text"
+                    required
+                    value={telefone}
+                    onChange={e => setTelefone(e.target.value)}
+                    className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                    placeholder="(11) 90000-0000"
+                  />
+                </div>
+
+                <div className="col-span-1">
+                   <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Email de Contato*</label>
+                   <input
+                     type="email"
+                     required
+                     value={email}
+                     onChange={e => setEmail(e.target.value)}
+                     className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                     placeholder="contato@email.com"
+                   />
+                </div>
+
+                <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                   <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Contato Principal</label>
+                   <input
+                     type="text"
+                     value={contatoPrincipal}
+                     onChange={e => setContatoPrincipal(e.target.value)}
+                     className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                     placeholder="Ex: João"
+                   />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Telefone / WhatsApp*</label>
-                <input
-                  type="text"
-                  required
-                  value={telefone}
-                  onChange={e => setTelefone(e.target.value)}
-                  className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  placeholder="(11) 90000-0000"
-                />
+            </div>
+            
+            <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Endereço Completo</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <div className="col-span-1 md:col-span-2 lg:col-span-1">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">CEP (Busca Automática)</label>
+                    <input
+                      type="text"
+                      value={cep}
+                      onChange={e => setCep(e.target.value)}
+                      onBlur={handleCepBlur}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                      placeholder="00000-000"
+                    />
+                 </div>
+                 <div className="col-span-1 md:col-span-2 lg:col-span-3"></div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
+                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Logradouro (Rua/Av)*</label>
+                    <input
+                      type="text"
+                      required
+                      value={logradouro}
+                      onChange={e => setLogradouro(e.target.value)}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                    />
+                 </div>
+                 <div className="col-span-1 lg:col-span-1">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Número*</label>
+                    <input
+                      id="numero_input"
+                      type="text"
+                      required
+                      value={numero}
+                      onChange={e => setNumero(e.target.value)}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                    />
+                 </div>
+                 
+                 <div className="col-span-1 md:col-span-1 lg:col-span-2">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Complemento</label>
+                    <input
+                      type="text"
+                      value={complemento}
+                      onChange={e => setComplemento(e.target.value)}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                      placeholder="Apto, Sala, Bloco..."
+                    />
+                 </div>
+                 <div className="col-span-1 md:col-span-1 lg:col-span-2">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Bairro*</label>
+                    <input
+                      type="text"
+                      required
+                      value={bairro}
+                      onChange={e => setBairro(e.target.value)}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                    />
+                 </div>
+                 
+                 <div className="col-span-1 md:col-span-1 lg:col-span-3">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Cidade*</label>
+                    <input
+                      type="text"
+                      required
+                      value={cidade}
+                      onChange={e => setCidade(e.target.value)}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                    />
+                 </div>
+                 <div className="col-span-1 md:col-span-1 lg:col-span-1">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">UF*</label>
+                    <input
+                      type="text"
+                      required
+                      value={uf}
+                      onChange={e => setUf(e.target.value)}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green uppercase"
+                      maxLength={2}
+                    />
+                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                 <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Email de Contato*</label>
-                 <input
-                   type="email"
-                   required
-                   value={email}
-                   onChange={e => setEmail(e.target.value)}
-                   className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                   placeholder="contato@email.com"
-                 />
-               </div>
-               <div>
-                 <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Contato Principal</label>
-                 <input
-                   type="text"
-                   value={contatoPrincipal}
-                   onChange={e => setContatoPrincipal(e.target.value)}
-                   className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                   placeholder="Ex: João"
-                 />
-               </div>
+            <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+               <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Observações / Preferências</label>
+               <textarea
+                 rows={3}
+                 value={observacoes}
+                 onChange={e => setObservacoes(e.target.value)}
+                 className="w-full px-3 py-2 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                 placeholder="Detalhes sobre entregas, prazos, formas de pagamento..."
+               />
             </div>
-          </div>
-          
-          <div className="space-y-4 p-5 bg-white border border-mesaninas-creme/80 rounded-xl shadow-sm">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Endereço Completo</h4>
-            
-            <div className="grid grid-cols-2 gap-4">
-               <div className="col-span-1 border-b border-white">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">CEP (Busca Automática)</label>
-                  <input
-                    type="text"
-                    value={cep}
-                    onChange={e => setCep(e.target.value)}
-                    onBlur={handleCepBlur}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                    placeholder="00000-000"
-                  />
-               </div>
-            </div>
-            
-            <div className="grid grid-cols-4 gap-4">
-               <div className="col-span-4 md:col-span-3">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Logradouro (Rua/Av)*</label>
-                  <input
-                    type="text"
-                    required
-                    value={logradouro}
-                    onChange={e => setLogradouro(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  />
-               </div>
-               <div className="col-span-4 md:col-span-1">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Número*</label>
-                  <input
-                    id="numero_input"
-                    type="text"
-                    required
-                    value={numero}
-                    onChange={e => setNumero(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  />
-               </div>
-               
-               <div className="col-span-4 md:col-span-2">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Complemento</label>
-                  <input
-                    type="text"
-                    value={complemento}
-                    onChange={e => setComplemento(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                    placeholder="Apto, Sala, Bloco..."
-                  />
-               </div>
-               <div className="col-span-4 md:col-span-2">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Bairro*</label>
-                  <input
-                    type="text"
-                    required
-                    value={bairro}
-                    onChange={e => setBairro(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  />
-               </div>
-               
-               <div className="col-span-4 md:col-span-3">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Cidade*</label>
-                  <input
-                    type="text"
-                    required
-                    value={cidade}
-                    onChange={e => setCidade(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  />
-               </div>
-               <div className="col-span-4 md:col-span-1">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">UF*</label>
-                  <input
-                    type="text"
-                    required
-                    value={uf}
-                    onChange={e => setUf(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green uppercase"
-                    maxLength={2}
-                  />
-               </div>
-            </div>
-          </div>
 
-          <div className="space-y-4 p-5 bg-white border border-mesaninas-creme/80 rounded-xl shadow-sm">
-            <div>
-              <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Observações / Preferências</label>
-              <textarea
-                rows={3}
-                value={observacoes}
-                onChange={e => setObservacoes(e.target.value)}
-                className="w-full px-3 py-2 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                placeholder="Detalhes sobre entregas, prazos, formas de pagamento..."
-              />
-            </div>
-          </div>
+          </form>
+        </div>
 
-        </form>
-
-        <div className="px-4 lg:px-6 py-4 border-t border-mesaninas-creme/80 bg-white flex justify-end gap-3 shrink-0 pb-safe z-10 w-full rounded-b-xl lg:rounded-none">
+        <div className="px-6 py-4 border-t border-mesaninas-creme/80 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
           <button
             type="button"
             onClick={onClose}
@@ -398,7 +400,8 @@ function FornecedorFormModal({ isOpen, onClose, fornecedorData, onSaveSuccess }:
             Cancelar
           </button>
           <button
-            onClick={handleSave}
+            type="submit"
+            form="fornecedorForm"
             disabled={isSubmitting || !nome || !email || !telefone || !cpfCnpj}
             className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50"
           >

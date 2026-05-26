@@ -972,9 +972,9 @@ export default function Orcamentos() {
 
       {/* Drawer Novo Orçamento */}
       {isModalOpen && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-end z-[60]">
-          <div className="h-full w-full max-w-5xl bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-1/4 duration-200">
-            <div className="px-4 lg:px-6 py-4 border-b border-mesaninas-creme flex justify-between items-center bg-mesaninas-creme/30 shrink-0 mt-safe">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+          <div className="w-[90vw] h-[90vh] overflow-hidden rounded-2xl bg-[#f4efdc] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-mesaninas-creme/50 flex justify-between items-center bg-white/50 shrink-0">
               <div>
                  <h3 className="font-serif font-bold text-lg text-mesaninas-green tracking-tight">
                    {editingOrcamentoId ? 'Editar Orçamento' : 'Novo Orçamento'}
@@ -983,48 +983,21 @@ export default function Orcamentos() {
               </div>
               <button 
                 onClick={() => { setIsModalOpen(false); resetForm(); }}
-                className="text-mesaninas-green/50 hover:text-mesaninas-green text-2xl font-bold p-2 h-12 w-12 flex items-center justify-center -mr-2"
+                className="text-mesaninas-green/50 hover:text-mesaninas-green text-2xl font-bold p-2 h-12 w-12 flex items-center justify-center -mr-2 transition-colors"
+                title="Fechar"
               >×</button>
             </div>
             
-            <div className="flex-1 overflow-auto p-4 lg:p-6 bg-mesaninas-creme/10 pb-24">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start h-full max-h-full">
-                {/* Lado Esquerdo - Imagem do Evento / Capa */}
-                <div className="flex flex-col gap-4 sticky top-0">
-                  <div>
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">URL da Foto (Capa/Inspiração)</label>
-                    <input
-                      type="url"
-                      value={imagemUrl}
-                      onChange={e => setImagemUrl(e.target.value)}
-                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green font-medium"
-                      placeholder="https://exemplo.com/evento.jpg"
-                    />
-                  </div>
-                  <div className="w-full aspect-[4/5] md:aspect-square lg:aspect-[4/3] border-2 border-dashed border-mesaninas-creme/80 rounded-xl flex flex-col items-center justify-center overflow-hidden bg-white/50 relative shadow-sm">
-                    {imagemUrl ? (
-                      <img src={imagemUrl} alt="Preview Evento" referrerPolicy="no-referrer" className="w-full h-full max-h-[500px] object-cover rounded-xl" />
-                    ) : (
-                      <div className="text-center text-mesaninas-green/40 p-6">
-                        <div className="w-16 h-16 bg-mesaninas-creme/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <span className="text-2xl font-serif">?</span>
-                        </div>
-                        <p className="text-sm font-medium">Sem imagem de refêrencia</p>
-                        <p className="text-xs mt-1 leading-relaxed">Adicione a URL acima para definir o moodboard do evento.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Lado Direito - Conteúdo do Orçamento */}
-                <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 bg-white">
+              <div className="w-full max-w-7xl mx-auto space-y-6">
               
               {/* Infos Básicas */}
-              <div className="space-y-4 p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm">
+              <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Informações do Evento</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Select de Cliente */}
-                  <div className="col-span-1 md:col-span-2">
+                  <div className="col-span-1 lg:col-span-1">
                     <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Cliente*</label>
                     <select
                       required
@@ -1040,30 +1013,32 @@ export default function Orcamentos() {
                   </div>
 
                   {/* Nome do Evento */}
-                  <div className="col-span-1 md:col-span-2">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-2">
                     <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Nome do Evento*</label>
                     <input
                       type="text"
                       required
                       value={nomeEvento}
                       onChange={e => setNomeEvento(e.target.value)}
-                      className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
                       placeholder="Ex: Reunião de Diretoria, Festa de Fim de Ano..."
                     />
                   </div>
+                </div>
                   
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {/* Datas e Horários */}
-                  <div>
+                  <div className="col-span-1">
                     <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Data do Evento*</label>
                     <input
                       type="date"
                       required
                       value={dataEvento}
                       onChange={e => setDataEvento(e.target.value)}
-                      className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-1">
                     <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Convidados*</label>
                     <input
                       type="number"
@@ -1071,23 +1046,22 @@ export default function Orcamentos() {
                       required
                       value={numConvidados}
                       onChange={e => setNumConvidados(e.target.value ? Number(e.target.value) : '')}
-                      className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
                       placeholder="Ex: 50"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 col-span-1 md:col-span-2">
-                     <div>
-                       <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Hora Início</label>
-                       <input type="time" value={horaInicio} onChange={e=>setHoraInicio(e.target.value)} className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" />
-                     </div>
-                     <div>
-                       <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Hora Fim</label>
-                       <input type="time" value={horaTermino} onChange={e=>setHoraTermino(e.target.value)} className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" />
-                     </div>
+                  <div className="col-span-1">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Hora Início</label>
+                    <input type="time" value={horaInicio} onChange={e=>setHoraInicio(e.target.value)} className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" />
                   </div>
+                  <div className="col-span-1">
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Hora Fim</label>
+                    <input type="time" value={horaTermino} onChange={e=>setHoraTermino(e.target.value)} className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" />
+                  </div>
+                </div>
 
-                  <div className="col-span-1 md:col-span-2 space-y-2 mt-2">
+                <div className="w-full space-y-2 mt-2">
                      <div className="flex items-center justify-between">
                         <label className="block text-xs font-semibold text-mesaninas-green/80">Endereço do Evento</label>
                         <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-mesaninas-green/60 hover:text-mesaninas-green">
@@ -1106,8 +1080,8 @@ export default function Orcamentos() {
                   </div>
                   
                   {/* Status / Pagamento */}
-                  <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-mesaninas-creme/50 mt-2">
-                     <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-mesaninas-creme/50 mt-4">
+                     <div className="col-span-1">
                         <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Status do Projeto</label>
                         <select
                           value={status}
@@ -1121,9 +1095,9 @@ export default function Orcamentos() {
                         </select>
                      </div>
                      {(status === 'Aprovado' || status === 'Entregue') && (
-                        <div>
+                        <div className="col-span-1 lg:col-span-2">
                            <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Status de Pagamento</label>
-                           <div className="flex gap-4 mt-2">
+                           <div className="flex gap-4 mt-2 h-10 items-center">
                               <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-mesaninas-green">
                                  <input 
                                     type="radio" 
@@ -1155,7 +1129,7 @@ export default function Orcamentos() {
               </div>
 
               {/* Custom Multi-select Cardápio */}
-              <div className="space-y-4 p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-visible">
+              <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl overflow-visible">
                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Cardápio (Multi-Select)</h4>
                 
                 <div className="relative" ref={dropdownRef}>
@@ -1247,7 +1221,7 @@ export default function Orcamentos() {
               </div>
               
               {/* Materiais e Insumos de Estoque */}
-              <div className="flex flex-col gap-4 p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm">
+              <div className="flex flex-col gap-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
                 <div className="flex justify-between items-center mb-1">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-mesaninas-green/80">Materiais e Insumos de Estoque</h4>
                   <button type="button" onClick={addMaterialEstoque} className="text-xs font-bold bg-mesaninas-creme/50 hover:bg-mesaninas-creme text-mesaninas-green px-3 py-1.5 rounded-md transition-colors">
@@ -1296,54 +1270,56 @@ export default function Orcamentos() {
               </div>
               
               {/* Custos Operacionais & Margem */}
-              <div className="flex flex-col gap-4 p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm">
-                 <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-mesaninas-green/80 mb-3 block">Custos Operacionais e Logística</h4>
-                    {custosExtras.map((item, index) => (
-                       <div key={index} className="flex gap-2 items-center mb-2">
-                           <input 
-                             type="text" 
-                             value={item.descricao} 
-                             onChange={(e) => updateCustoExtraDesc(index, e.target.value)} 
-                             className="flex-1 px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
-                             placeholder="Descrição (Ex: Gasolina, Garçom)" 
-                           />
-                           <input 
-                             type="text" 
-                             inputMode="numeric"
-                             value={item.valor} 
-                             onChange={(e) => updateCustoExtraValor(index, e.target.value)} 
-                             className="w-32 px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
-                             placeholder="R$ 0,00" 
-                           />
-                           <button type="button" onClick={() => removeCustoExtra(index)} className="p-2 text-mesaninas-green/50 hover:text-red-500 transition-colors">
-                              <Trash2 className="w-5 h-5 lg:w-4 lg:h-4" />
-                           </button>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                 {/* Custos Operacionais */}
+                 <div className="flex flex-col gap-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl h-full">
+                    <div>
+                       <h4 className="text-xs font-bold uppercase tracking-wider text-mesaninas-green/80 mb-3 block">Custos Operacionais e Logística</h4>
+                       {custosExtras.map((item, index) => (
+                          <div key={index} className="flex gap-2 items-center mb-2">
+                              <input 
+                                type="text" 
+                                value={item.descricao} 
+                                onChange={(e) => updateCustoExtraDesc(index, e.target.value)} 
+                                className="flex-1 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
+                                placeholder="Descrição (Ex: Gasolina)" 
+                              />
+                              <input 
+                                type="text" 
+                                inputMode="numeric"
+                                value={item.valor} 
+                                onChange={(e) => updateCustoExtraValor(index, e.target.value)} 
+                                className="w-28 sm:w-32 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
+                                placeholder="R$ 0,00" 
+                              />
+                              <button type="button" onClick={() => removeCustoExtra(index)} className="p-2 text-mesaninas-green/50 hover:text-red-500 transition-colors shrink-0">
+                                 <Trash2 className="w-5 h-5 lg:w-4 lg:h-4" />
+                              </button>
+                          </div>
+                       ))}
+                       <button type="button" onClick={addCustoExtra} className="mt-2 text-xs font-bold text-mesaninas-green bg-white border border-mesaninas-creme/50 hover:bg-mesaninas-creme/60 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
+                          + Adicionar Custo Extra
+                       </button>
+                    </div>
+                    
+                    <div className="pt-4 border-t border-mesaninas-creme/50 mt-auto">
+                       <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Margem de Lucro Desejada (%)</label>
+                       <div className="relative w-full sm:w-1/2">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={margemLucro}
+                            onChange={e => setMargemLucro(e.target.value ? Number(e.target.value) : '')}
+                            className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mesaninas-green/50 font-bold">%</span>
                        </div>
-                    ))}
-                    <button type="button" onClick={addCustoExtra} className="mt-2 text-xs font-bold text-mesaninas-green bg-mesaninas-creme/30 hover:bg-mesaninas-creme/60 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                       + Adicionar Custo Extra
-                    </button>
-                 </div>
-                 
-                 <div className="pt-4 border-t border-mesaninas-creme/50 mt-2">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Margem de Lucro Desejada (%)</label>
-                    <div className="relative w-full md:w-1/2">
-                       <input
-                         type="number"
-                         min="0"
-                         max="100"
-                         value={margemLucro}
-                         onChange={e => setMargemLucro(e.target.value ? Number(e.target.value) : '')}
-                         className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green pr-8"
-                       />
-                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mesaninas-green/50 font-bold">%</span>
                     </div>
                  </div>
-              </div>
 
-              {/* Reactive Live Calculator */}
-              <div className="bg-mesaninas-green rounded-xl p-5 text-mesaninas-creme shadow-xl">
+                 {/* Reactive Live Calculator */}
+                 <div className="bg-mesaninas-green rounded-xl p-5 md:p-6 text-mesaninas-creme shadow-xl h-full flex flex-col justify-center">
                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-yellow mb-4 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-mesaninas-yellow animate-pulse"></div>
                     Motor de Cálculo (Live)
@@ -1381,11 +1357,11 @@ export default function Orcamentos() {
                     </div>
                  </div>
               </div>
-                </div>
+              
               </div>
             </div>
             
-            <div className="px-4 lg:px-6 py-4 border-t border-mesaninas-creme bg-white flex justify-end gap-3 shrink-0 pb-safe z-10 w-full rounded-b-xl lg:rounded-none">
+            <div className="px-6 py-4 border-t border-mesaninas-creme/80 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => { setIsModalOpen(false); resetForm(); }}

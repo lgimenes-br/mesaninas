@@ -252,117 +252,139 @@ export default function Estoque() {
     </div>
 
       {isModalOpen && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-mesaninas-green">{editingItem ? 'Editar Item' : 'Cadastrar Item'}</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+          <div className="w-[90vw] h-[90vh] overflow-hidden rounded-2xl bg-[#f4efdc] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-mesaninas-creme/50 flex justify-between items-center bg-white/50 shrink-0">
+              <div>
+                 <h3 className="font-serif font-bold text-lg text-mesaninas-green tracking-tight">
+                   {editingItem ? 'Editar Item' : 'Cadastrar Item'}
+                 </h3>
+                 <p className="text-xs text-mesaninas-green/70">Controle de insumos e materiais do estoque</p>
+              </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-mesaninas-green/50 hover:text-mesaninas-green text-xl font-bold"
+                className="text-mesaninas-green/50 hover:text-mesaninas-green text-2xl font-bold p-2 h-12 w-12 flex items-center justify-center -mr-2 transition-colors"
+                title="Fechar"
               >×</button>
             </div>
             
-            <form onSubmit={handleCadastrar} className="p-6 space-y-4 flex-1 overflow-auto">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60 mb-1">
-                  Nome do Item
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={nome}
-                  onChange={e => setNome(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  placeholder="Ex: Copos Descartáveis"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60 mb-1">
-                    Unidade de Medida
-                  </label>
-                  <select
-                    value={unidade}
-                    onChange={e => setUnidade(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                  >
-                    <option value="Unidade">Unidade (Un)</option>
-                    <option value="Caixa">Caixa</option>
-                    <option value="Pacote">Pacote</option>
-                    <option value="Kg">Quilograma (Kg)</option>
-                    <option value="L">Litro (L)</option>
-                  </select>
-                </div>
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 bg-white">
+              <form onSubmit={handleCadastrar} className="w-full max-w-7xl mx-auto space-y-6" id="estoqueForm">
                 
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60 mb-1">
-                    Quantidade Incial
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={quantidade}
-                    onChange={e => setQuantidade(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60 mb-1">
-                  Fornecedores Homologados
-                </label>
-                <div className="relative">
-                  <div
-                    className="w-full px-3 py-2 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green cursor-pointer flex justify-between items-center"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  >
-                    <span className="truncate">
-                      {fornecedoresRelacionados.length > 0 
-                        ? `${fornecedoresRelacionados.length} fornecedor(es) selecionado(s)` 
-                        : 'Selecione fornecedores...'}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-mesaninas-green/50" />
-                  </div>
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-full max-h-40 overflow-y-auto bg-white border border-mesaninas-creme rounded-md shadow-lg z-10">
-                      {fornecedores.length === 0 ? (
-                        <div className="p-3 text-xs text-mesaninas-green/50">Nenhum fornecedor cadastrado.</div>
-                      ) : (
-                        fornecedores.map(forn => (
-                          <label key={forn.id} className="flex items-center gap-2 p-3 hover:bg-mesaninas-creme/20 cursor-pointer border-b border-mesaninas-creme/30 last:border-0">
-                            <input
-                              type="checkbox"
-                              checked={fornecedoresRelacionados.includes(forn.id)}
-                              onChange={() => toggleFornecedor(forn.id)}
-                              className="text-mesaninas-yellow focus:ring-mesaninas-yellow h-4 w-4 rounded border-mesaninas-creme"
-                            />
-                            <span className="text-sm text-mesaninas-green truncate">{forn.nome}</span>
-                          </label>
-                        ))
-                      )}
+                <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Dados do Item</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                      <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">
+                        Nome do Item*
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={nome}
+                        onChange={e => setNome(e.target.value)}
+                        className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                        placeholder="Ex: Copos Descartáveis"
+                      />
                     </div>
-                  )}
+                    
+                    <div className="col-span-1">
+                      <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">
+                        Unidade de Medida*
+                      </label>
+                      <select
+                        value={unidade}
+                        onChange={e => setUnidade(e.target.value)}
+                        className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                      >
+                        <option value="Unidade">Unidade (Un)</option>
+                        <option value="Caixa">Caixa</option>
+                        <option value="Pacote">Pacote</option>
+                        <option value="Kg">Quilograma (Kg)</option>
+                        <option value="L">Litro (L)</option>
+                      </select>
+                    </div>
+                    
+                    <div className="col-span-1">
+                      <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">
+                        Quantidade Incial*
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        value={quantidade}
+                        onChange={e => setQuantidade(e.target.value)}
+                        className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </form>
+
+                <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Fornecimento</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                      <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">
+                        Fornecedores Homologados
+                      </label>
+                      <div className="relative">
+                        <div
+                          className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green cursor-pointer flex justify-between items-center"
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        >
+                          <span className="truncate">
+                            {fornecedoresRelacionados.length > 0 
+                              ? `${fornecedoresRelacionados.length} fornecedor(es) selecionado(s)` 
+                              : 'Selecione os fornecedores...'}
+                          </span>
+                          <ChevronDown className="w-4 h-4 text-mesaninas-green/50" />
+                        </div>
+                        {isDropdownOpen && (
+                          <div className="absolute top-full left-0 mt-1 w-full max-h-60 overflow-y-auto bg-white border border-mesaninas-creme rounded-md shadow-lg z-10">
+                            {fornecedores.length === 0 ? (
+                              <div className="p-4 text-sm text-mesaninas-green/50 text-center">Nenhum fornecedor cadastrado.</div>
+                            ) : (
+                              fornecedores.map(forn => (
+                                <label key={forn.id} className="flex items-center gap-3 p-3 hover:bg-mesaninas-creme/20 cursor-pointer border-b border-mesaninas-creme/30 last:border-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={fornecedoresRelacionados.includes(forn.id)}
+                                    onChange={() => toggleFornecedor(forn.id)}
+                                    className="text-mesaninas-yellow focus:ring-mesaninas-yellow h-5 w-5 rounded border-mesaninas-creme cursor-pointer"
+                                  />
+                                  <span className="text-sm font-medium text-mesaninas-green truncate">{forn.nome}</span>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </form>
+            </div>
             
-            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-mesaninas-creme/80 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-mesaninas-green/70 hover:text-mesaninas-green transition-colors"
+                className="px-4 h-12 lg:h-10 text-sm font-medium text-mesaninas-green/70 hover:text-mesaninas-green transition-colors"
+                disabled={isSubmitting}
               >
                 Cancelar
               </button>
               <button
-                onClick={handleCadastrar}
+                type="submit"
+                form="estoqueForm"
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50"
+                className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50"
               >
                 {isSubmitting ? 'Salvando...' : (editingItem ? 'Atualizar Item' : 'Salvar Item')}
               </button>

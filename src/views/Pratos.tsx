@@ -324,164 +324,169 @@ export default function Pratos() {
 
       {/* Modal / Drawer para Novo Prato */}
       {isModalOpen && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-end z-50">
-          <div className="h-full w-full max-w-5xl bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-1/4 duration-200">
-            <div className="px-6 py-4 border-b border-mesaninas-creme flex justify-between items-center bg-mesaninas-creme/30 shrink-0">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+          <div className="w-[90vw] h-[90vh] overflow-hidden rounded-2xl bg-[#f4efdc] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-mesaninas-creme/50 flex justify-between items-center bg-white/50 shrink-0">
               <div>
                  <h3 className="font-bold text-mesaninas-green tracking-tight font-serif text-lg">{editingPrato ? 'Editar Item do Cardápio' : 'Novo Item do Cardápio'}</h3>
                  <p className="text-xs text-mesaninas-green/70">Adicione ao menu de vendas</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-mesaninas-green/50 hover:text-mesaninas-green text-xl font-bold p-2"
+                className="text-mesaninas-green/50 hover:text-mesaninas-green text-xl font-bold p-2 transition-colors"
+                title="Fechar"
               >×</button>
             </div>
             
-            <form onSubmit={handleCadastrar} className="flex-1 overflow-auto p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start h-full">
-                {/* Lado Esquerdo - Imagem */}
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">URL da Imagem</label>
-                    <input
-                      type="url"
-                      value={imagemUrl}
-                      onChange={e => setImagemUrl(e.target.value)}
-                      className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
-                      placeholder="https://exemplo.com/imagem.jpg"
-                    />
-                  </div>
-                  <div className="flex-1 border-2 border-dashed border-mesaninas-creme rounded-xl flex flex-col items-center justify-center p-4 min-h-[300px] overflow-hidden bg-mesaninas-creme/10 relative">
-                    {imagemUrl ? (
-                      <img src={imagemUrl} alt="Preview" referrerPolicy="no-referrer" className="w-full h-full max-h-[400px] object-cover rounded-xl shadow-sm" />
-                    ) : (
-                      <div className="text-center text-mesaninas-green/40">
-                        <div className="w-16 h-16 bg-mesaninas-creme/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <span className="text-2xl font-serif">?</span>
-                        </div>
-                        <p className="text-sm font-medium">Sem imagem</p>
-                        <p className="text-xs mt-1">Cole a URL acima para visualizar</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Lado Direito - Formulário */}
-                <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Nome do Prato / Item*</label>
-                  <input
-                    type="text"
-                    required
-                    value={nome}
-                    onChange={e => setNome(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
-                    placeholder="Ex: Risoto de Funghi"
-                  />
-                </div>
+            <div className="flex-1 overflow-hidden">
+              <form onSubmit={handleCadastrar} className="grid grid-cols-1 md:grid-cols-[30%_70%] h-full w-full">
                 
-                <div>
-                  <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Tipo de Venda*</label>
-                  <select
-                    value={tipoVenda}
-                    onChange={e => setTipoVenda(e.target.value as any)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
-                  >
-                    <option value="Por Unidade">Por Unidade</option>
-                    <option value="Por Quilo">Por Quilo (Kg)</option>
-                  </select>
-                </div>
-
-                <div>
-                   <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">
-                     {tipoVenda === 'Por Unidade' ? 'Quantidade por Pessoa*' : 'Rendimento (Pessoas)*'}
-                   </label>
-                   <input
-                     type="number"
-                     min="1"
-                     step="1"
-                     required
-                     value={rendimento}
-                     onChange={e => setRendimento(Number(e.target.value) || 1)}
-                     className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
-                     placeholder={tipoVenda === 'Por Unidade' ? 'Ex: 4 (Significa que 1 pessoa consome 4 unidades)' : 'Ex: 10 (Significa que 1 unidade/kg serve 10 pessoas)'}
-                     title={tipoVenda === 'Por Unidade' ? 'Ex: 4 (Significa que 1 pessoa consome 4 unidades)' : 'Ex: 10 (Significa que 1 unidade/kg serve 10 pessoas)'}
-                   />
-                </div>
-
-                <div className="pt-4 border-t border-mesaninas-creme/50 mt-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="block text-xs font-semibold text-mesaninas-green/70">
-                      Fornecedores e Custos*
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addFornecedorCusto}
-                      className="px-3 py-1 bg-mesaninas-creme/30 hover:bg-mesaninas-creme text-mesaninas-green font-bold text-xs rounded-md transition-colors"
-                    >
-                      + Adicionar Fornecedor
-                    </button>
-                  </div>
-                  {fornecedoresCustos.length === 0 ? (
-                    <div className="text-sm text-mesaninas-green/50 p-4 text-center border border-dashed border-mesaninas-creme rounded-lg">
-                      Nenhum fornecedor adicionado. Adicione pelo menos um para salvar o custo.
-                    </div>
+                {/* COLUNA ESQUERDA - Imagem (30%) */}
+                <div className="relative h-[30vh] md:h-full border-b md:border-b-0 md:border-r border-mesaninas-creme/50 bg-mesaninas-creme/20 overflow-hidden flex flex-col">
+                  {imagemUrl ? (
+                    <img src={imagemUrl} alt="Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="space-y-3">
-                      {fornecedoresCustos.map((fc, idx) => (
-                        <div key={idx} className="flex gap-2 items-center">
-                          <select
-                            required
-                            value={fc.fornecedorId}
-                            onChange={(e) => updateFornecedorCusto(idx, 'fornecedorId', e.target.value)}
-                            className="flex-1 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                          >
-                            <option value="">Selecione o Fornecedor...</option>
-                            {fornecedores.map(f => (
-                              <option key={f.id} value={f.id}>{f.nome}</option>
-                            ))}
-                          </select>
+                     <div className="flex-1 flex flex-col items-center justify-center text-mesaninas-green/40">
+                       <div className="w-16 h-16 border border-dashed border-mesaninas-green/30 bg-white/50 shadow-sm rounded-full flex items-center justify-center mb-3">
+                         <span className="text-2xl font-serif">?</span>
+                       </div>
+                       <p className="text-sm font-medium">Sem imagem</p>
+                     </div>
+                  )}
+                  {/* Overlay URL Input */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                      <label className="block text-xs font-semibold text-white/90 mb-1 drop-shadow-md">URL da Imagem do Prato</label>
+                      <input
+                        type="url"
+                        value={imagemUrl}
+                        onChange={e => setImagemUrl(e.target.value)}
+                        className="w-full px-3 h-10 bg-white/90 border-0 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/80 text-mesaninas-green placeholder-gray-400"
+                        placeholder="https://exemplo.com/imagem.jpg"
+                      />
+                  </div>
+                </div>
+
+                {/* COLUNA DIREITA - Formulário (70%) */}
+                <div className="overflow-y-auto h-full p-6 md:p-8 lg:p-10 flex flex-col bg-white">
+                  <div className="flex-1 space-y-6 max-w-3xl">
+                    <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Nome do Prato / Item*</label>
                           <input
                             type="text"
-                            inputMode="numeric"
                             required
-                            value={fc.custo}
-                            onChange={(e) => updateFornecedorCusto(idx, 'custo', e.target.value)}
-                            className="w-32 px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
-                            placeholder="R$ 0,00"
+                            value={nome}
+                            onChange={e => setNome(e.target.value)}
+                            className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+                            placeholder="Ex: Risoto de Funghi"
                           />
-                          <button
-                            type="button"
-                            onClick={() => removeFornecedorCusto(idx)}
-                            className="p-2 h-12 lg:h-10 text-red-500 hover:bg-red-50 rounded-md transition-colors w-10 flex items-center justify-center shrink-0 border border-mesaninas-creme/0 hover:border-red-100"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
-                      ))}
+                        
+                        <div>
+                          <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Tipo de Venda*</label>
+                          <select
+                            value={tipoVenda}
+                            onChange={e => setTipoVenda(e.target.value as any)}
+                            className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+                          >
+                            <option value="Por Unidade">Por Unidade</option>
+                            <option value="Por Quilo">Por Quilo (Kg)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                           <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">
+                             {tipoVenda === 'Por Unidade' ? 'Quantidade por Pessoa*' : 'Rendimento (Pessoas)*'}
+                           </label>
+                           <input
+                             type="number"
+                             min="1"
+                             step="1"
+                             required
+                             value={rendimento}
+                             onChange={e => setRendimento(Number(e.target.value) || 1)}
+                             className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+                             placeholder={tipoVenda === 'Por Unidade' ? 'Ex: 4 (Significa que 1 pessoa consome 4 unidades)' : 'Ex: 10 (Significa que 1 unidade/kg serve 10 pessoas)'}
+                             title={tipoVenda === 'Por Unidade' ? 'Ex: 4 (Significa que 1 pessoa consome 4 unidades)' : 'Ex: 10 (Significa que 1 unidade/kg serve 10 pessoas)'}
+                           />
+                        </div>
+
+                        <div className="pt-4 border-t border-mesaninas-creme/50 mt-6">
+                          <div className="flex justify-between items-center mb-3">
+                            <label className="block text-xs font-semibold text-mesaninas-green/70">
+                              Fornecedores e Custos*
+                            </label>
+                            <button
+                              type="button"
+                              onClick={addFornecedorCusto}
+                              className="px-3 py-1.5 bg-mesaninas-creme/30 hover:bg-mesaninas-creme text-mesaninas-green font-bold text-xs rounded-md transition-colors"
+                            >
+                              + Adicionar Fornecedor
+                            </button>
+                          </div>
+                          {fornecedoresCustos.length === 0 ? (
+                            <div className="text-sm text-mesaninas-green/50 p-6 text-center border border-dashed border-mesaninas-creme rounded-lg bg-mesaninas-creme/10">
+                              Nenhum fornecedor adicionado. Adicione pelo menos um para salvar o custo.
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {fornecedoresCustos.map((fc, idx) => (
+                                <div key={idx} className="flex gap-2 items-center">
+                                  <select
+                                    required
+                                    value={fc.fornecedorId}
+                                    onChange={(e) => updateFornecedorCusto(idx, 'fornecedorId', e.target.value)}
+                                    className="flex-1 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                                  >
+                                    <option value="">Selecione o Fornecedor...</option>
+                                    {fornecedores.map(f => (
+                                      <option key={f.id} value={f.id}>{f.nome}</option>
+                                    ))}
+                                  </select>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    required
+                                    value={fc.custo}
+                                    onChange={(e) => updateFornecedorCusto(idx, 'custo', e.target.value)}
+                                    className="w-32 px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+                                    placeholder="R$ 0,00"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFornecedorCusto(idx)}
+                                    className="p-2 h-12 lg:h-10 text-red-500 hover:bg-red-50 rounded-md transition-colors w-10 flex items-center justify-center shrink-0 border border-mesaninas-creme/0 hover:border-red-100"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="mt-10 pt-6 border-t border-mesaninas-creme/50 flex justify-end gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-4 h-12 lg:h-10 text-sm font-medium text-mesaninas-green/70 hover:text-mesaninas-green transition-colors"
+                      disabled={isSubmitting}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !nome || fornecedoresCustos.length === 0}
+                      className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Salvando...' : (editingPrato ? 'Atualizar Prato' : 'Salvar Prato')}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              </div>
-            </form>
-            
-            <div className="px-6 py-4 border-t border-mesaninas-creme bg-white flex justify-end gap-3 shrink-0 pb-safe">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 h-12 lg:h-10 text-sm font-medium text-mesaninas-green/70 hover:text-mesaninas-green transition-colors"
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCadastrar}
-                disabled={isSubmitting || !nome || fornecedoresCustos.length === 0}
-                className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50"
-              >
-                {isSubmitting ? 'Salvando...' : (editingPrato ? 'Atualizar Prato' : 'Salvar Prato')}
-              </button>
+
+              </form>
             </div>
           </div>
         </div>

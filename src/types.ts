@@ -108,3 +108,14 @@ export interface Orcamento {
   ultimoEditor?: string;
 }
 
+export interface Transacao {
+  id: string;
+  data: string;
+  descricao: string;
+  categoria: string;
+  tipo: 'Receita' | 'Despesa';
+  valor: number;
+  status: 'Pago' | 'Pendente';
+  createdAt?: string;
+}
+

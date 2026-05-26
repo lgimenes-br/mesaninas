@@ -314,11 +314,11 @@ export default function Usuarios() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-mesaninas-green/80 backdrop-blur-sm flex items-end lg:items-center justify-center p-0 lg:p-4 z-50">
-          <div className="bg-white lg:rounded-2xl rounded-t-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl relative animate-in slide-in-from-bottom-full lg:slide-in-from-bottom-8 duration-300">
-            <div className="flex justify-between items-center px-4 lg:px-6 py-4 border-b border-mesaninas-creme shrink-0">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+          <div className="w-[90vw] h-[90vh] overflow-hidden rounded-2xl bg-[#f4efdc] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-mesaninas-creme/50 flex justify-between items-center bg-white/50 shrink-0">
                <div>
-                 <h3 className="text-lg font-serif font-bold text-mesaninas-green flex items-center gap-2">
+                 <h3 className="font-serif font-bold text-lg text-mesaninas-green flex items-center gap-2">
                    <UserCheck className="w-5 h-5 text-mesaninas-yellow" />
                    {editingUser ? 'Editar Acesso' : 'Cadastrar Usuário'}
                  </h3>
@@ -326,141 +326,168 @@ export default function Usuarios() {
                </div>
                <button 
                  onClick={closeModal}
-                 className="text-mesaninas-green/50 hover:text-mesaninas-green p-2 flex items-center justify-center -mr-2"
+                 className="text-mesaninas-green/50 hover:text-mesaninas-green p-2 h-12 w-12 flex items-center justify-center -mr-2 text-2xl font-bold transition-colors"
+                 title="Fechar"
                >
-                 <X size={24} />
+                 ×
                </button>
             </div>
             
-            <form onSubmit={handleSave} className="flex-1 overflow-auto p-4 lg:p-6 space-y-4 bg-mesaninas-creme/10">
-              <div className="flex flex-col items-center mb-6">
-                <div className="relative mb-3">
-                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-mesaninas-green/50 flex items-center justify-center bg-mesaninas-creme overflow-hidden shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] flex-1 overflow-hidden">
+               {/* 30% LEFT COLUMN: User Photo */}
+               <div className="col-span-1 border-r border-mesaninas-creme/50 bg-mesaninas-creme/20 p-6 flex flex-col items-center justify-center pt-10">
+                 <div className="w-full aspect-square max-w-[200px] mb-6 rounded-full border-4 border-white shadow-xl overflow-hidden relative group bg-white flex items-center justify-center">
                     {fotoPerfil ? (
                       <img src={fotoPerfil} alt="Perfil" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="text-xl font-bold text-mesaninas-green">
+                      <div className="text-5xl font-bold text-mesaninas-green/30">
                         {nome ? nome.substring(0, 2).toUpperCase() : 'U'}
                       </div>
                     )}
-                  </div>
-                  <button 
-                    type="button" 
-                    className="absolute bottom-0 right-0 w-7 h-7 bg-mesaninas-green rounded-full flex items-center justify-center text-mesaninas-creme border-2 border-white shadow-sm hover:bg-mesaninas-green/90 transition-colors cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Camera size={14} />
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    type="button" 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 bg-mesaninas-green text-mesaninas-creme text-xs font-bold rounded-md shadow-sm transition-colors hover:bg-mesaninas-green/90"
-                  >
-                    Fazer Upload
-                  </button>
-                  {fotoPerfil && (
                     <button 
                       type="button" 
-                      onClick={() => setFotoPerfil(null)}
-                      className="px-4 py-2 border border-mesaninas-green/30 text-mesaninas-green text-xs font-bold rounded-md hover:bg-mesaninas-green/5 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
                     >
-                      Remover Foto
+                      <Camera className="w-8 h-8 mb-2" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Alterar Foto</span>
                     </button>
-                  )}
-                </div>
-                <input 
-                  type="file" 
-                  accept="image/png, image/jpeg" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  className="hidden" 
-                />
-              </div>
+                 </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Nome Completo</label>
-                <input 
-                  type="text"
-                  required
-                  value={nome}
-                  onChange={e => setNome(e.target.value)}
-                  className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
-                  placeholder="Ex: Ana Maria"
-                />
-              </div>
+                 <div className="flex gap-2">
+                   <button 
+                     type="button" 
+                     onClick={() => fileInputRef.current?.click()}
+                     className="px-4 py-2 bg-white border border-mesaninas-green/20 text-mesaninas-green text-xs font-bold rounded-md shadow-sm transition-colors hover:bg-mesaninas-creme/50"
+                   >
+                     Fazer Upload
+                   </button>
+                   {fotoPerfil && (
+                     <button 
+                       type="button" 
+                       onClick={() => setFotoPerfil(null)}
+                       className="px-4 py-2 bg-white border border-red-200 text-red-500 text-xs font-bold rounded-md hover:bg-red-50 transition-colors"
+                     >
+                       Remover
+                     </button>
+                   )}
+                 </div>
+                 <input 
+                   type="file" 
+                   accept="image/png, image/jpeg" 
+                   ref={fileInputRef} 
+                   onChange={handleFileChange} 
+                   className="hidden" 
+                 />
 
-              <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">E-mail</label>
-                <input 
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
-                  placeholder="Digite o e-mail"
-                />
-              </div>
+                 <div className="mt-auto pt-8 w-full text-center">
+                    <p className="text-[10px] uppercase font-bold text-mesaninas-green/40 tracking-wider">Permissões de Acesso</p>
+                    <div className="mt-2 text-sm text-mesaninas-green font-medium">
+                       Perfil: <span className="text-mesaninas-yellow">{perfil}</span>
+                    </div>
+                 </div>
+               </div>
 
-              {!editingUser && (
-                <div>
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Senha Temporária</label>
-                  <input 
-                    type="password"
-                    required
-                    value={senha}
-                    onChange={e => setSenha(e.target.value)}
-                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
-                    placeholder="Mínimo de 6 caracteres"
-                    minLength={6}
-                  />
-                </div>
-              )}
+               {/* 70% RIGHT COLUMN: Form and Footer */}
+               <div className="col-span-1 overflow-y-auto bg-white flex flex-col relative h-full">
+                  <form onSubmit={handleSave} className="p-6 md:p-8 space-y-6 max-w-4xl w-full flex-1" id="usuarioForm">
+                    <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Dados do Usuário</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="col-span-1 md:col-span-2">
+                          <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Nome Completo</label>
+                          <input 
+                            type="text"
+                            required
+                            value={nome}
+                            onChange={e => setNome(e.target.value)}
+                            className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
+                            placeholder="Ex: Ana Maria"
+                          />
+                        </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Perfil do Usuário</label>
-                <select 
-                  value={perfil} 
-                  onChange={e => setPerfil(e.target.value as any)}
-                  className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
-                >
-                  <option value="Cliente">Cliente</option>
-                  <option value="Fornecedor">Fornecedor</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Status da Conta</label>
-                <select 
-                  value={status} 
-                  onChange={e => setStatus(e.target.value as any)}
-                  className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
-                >
-                  <option value="Ativo">Ativo</option>
-                  <option value="Inativo">Inativo</option>
-                </select>
-              </div>
-            </form>
+                        <div className="col-span-1 md:col-span-2">
+                          <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">E-mail</label>
+                          <input 
+                            type="email"
+                            required
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
+                            placeholder="Digite o e-mail"
+                          />
+                        </div>
 
-            <div className="px-4 lg:px-6 py-4 border-t border-mesaninas-creme bg-white flex justify-end gap-3 shrink-0 pb-safe z-10 w-full rounded-b-xl lg:rounded-none">
-              <button
-                type="button"
-                onClick={closeModal}
-                className="px-4 h-12 lg:h-10 text-sm font-medium text-mesaninas-green/70 hover:text-mesaninas-green transition-colors"
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                onClick={handleSave}
-                disabled={isSubmitting}
-                className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? 'Salvando...' : 'Salvar Acesso'}
-              </button>
+                        {!editingUser && (
+                          <div className="col-span-1">
+                            <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Senha Temporária</label>
+                            <input 
+                              type="password"
+                              required
+                              value={senha}
+                              onChange={e => setSenha(e.target.value)}
+                              className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
+                              placeholder="Mínimo de 6 caracteres"
+                              minLength={6}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Configurações de Conta</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="col-span-1">
+                          <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Perfil do Usuário</label>
+                          <select 
+                            value={perfil} 
+                            onChange={e => setPerfil(e.target.value as any)}
+                            className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
+                          >
+                            <option value="Cliente">Cliente</option>
+                            <option value="Fornecedor">Fornecedor</option>
+                            <option value="Admin">Admin</option>
+                          </select>
+                        </div>
+                        
+                        <div className="col-span-1">
+                          <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Status da Conta</label>
+                          <select 
+                            value={status} 
+                            onChange={e => setStatus(e.target.value as any)}
+                            className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
+                          >
+                            <option value="Ativo">Ativo</option>
+                            <option value="Inativo">Inativo</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+
+                  {/* FORM FOOTER ACTION BAR */}
+                  <div className="p-6 md:p-8 mt-auto flex justify-end gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-4 h-12 lg:h-10 text-sm font-medium text-mesaninas-green/70 hover:text-mesaninas-green transition-colors"
+                      disabled={isSubmitting}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      form="usuarioForm"
+                      disabled={isSubmitting}
+                      className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Salvando...' : 'Salvar Acesso'}
+                    </button>
+                  </div>
+               </div>
             </div>
           </div>
         </div>
