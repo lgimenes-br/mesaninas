@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Dashboard from './views/Dashboard';
 import Financeiro from './views/Financeiro';
 import Estoque from './views/Estoque';
+import Inventario from './views/Inventario';
 import Pratos from './views/Pratos';
 import Clientes from './views/Clientes';
 import Orcamentos from './views/Orcamentos';
@@ -13,7 +14,7 @@ import Usuarios from './views/Usuarios';
 import Login from './views/Login';
 import { useAuth } from './contexts/AuthContext';
 
-export type ViewType = 'dashboard' | 'clientes' | 'fornecedores' | 'estoque' | 'pratos' | 'orcamentos' | 'financeiro' | 'configuracoes' | 'usuarios';
+export type ViewType = 'dashboard' | 'clientes' | 'fornecedores' | 'estoque' | 'pratos' | 'orcamentos' | 'financeiro' | 'configuracoes' | 'usuarios' | 'inventario';
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
@@ -40,6 +41,7 @@ export default function App() {
           <div className="flex-1 mt-2 pb-6 min-h-0">
             {activeView === 'dashboard' && <Dashboard onNavigate={setActiveView} />}
             {activeView === 'estoque' && <Estoque />}
+            {activeView === 'inventario' && <Inventario />}
             {activeView === 'pratos' && <Pratos />}
             {activeView === 'orcamentos' && <Orcamentos />}
             {activeView === 'financeiro' && <Financeiro />}

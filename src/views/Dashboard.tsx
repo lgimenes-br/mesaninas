@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Orcamento, Cliente, ItemEstoque } from '../types';
 import { Users, Clock, CalendarCheck, DollarSign, Plus, AlertTriangle } from 'lucide-react';
@@ -12,6 +12,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
   const [clientesTotais, setClientesTotais] = useState<number>(0);
   const [estoque, setEstoque] = useState<ItemEstoque[]>([]);
   const [despesasDb, setDespesasDb] = useState<any[]>([]);
+  const [configGerais, setConfigGerais] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const { userProfile } = useAuth(); 
 
@@ -45,11 +46,18 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
       setDespesasDb(docs);
     });
 
+    const unsubConfig = onSnapshot(doc(db, 'configuracoes', 'gerais'), (docSnap) => {
+      if (docSnap.exists()) {
+        setConfigGerais(docSnap.data());
+      }
+    });
+
     return () => {
       unsubClientes();
       unsubOrcamentos();
       unsubEstoque();
       unsubDespesas();
+      unsubConfig();
     };
   }, []);
 
@@ -162,29 +170,31 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
       }
     });
 
-    // Orçamentos Pendentes (> 5 days)
-    const fiveDaysAgo = new Date();
-    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    // Orçamentos Pendentes
+    const diasOrcamento = configGerais.alertaOrcamentoDias || 5;
+    const limitDate = new Date();
+    limitDate.setDate(limitDate.getDate() - diasOrcamento);
     orcamentos.forEach(o => {
        if (o.status?.toLowerCase() === 'enviado' && o.createdAt) {
           const createdAt = new Date(o.createdAt);
-          if (createdAt < fiveDaysAgo) {
-             alerts.push({ type: 'critical', title: 'Orçamento Pendente', desc: `Proposta para "${o.clienteNome || 'Cliente'}" enviada há mais de 5 dias sem resposta.` });
+          if (createdAt < limitDate) {
+             alerts.push({ type: 'critical', title: 'Orçamento Pendente', desc: `Proposta para "${o.clienteNome || 'Cliente'}" enviada há mais de ${diasOrcamento} dias sem resposta.` });
           }
        }
     });
 
-    // Despesas Vencendo nos próximos 2 dias
+    // Despesas Vencendo nos próximos dias
+    const diasDespesa = configGerais.alertaDespesaDias || 2;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const inTwoDays = new Date(today);
-    inTwoDays.setDate(inTwoDays.getDate() + 2);
+    const limitDespesaDate = new Date(today);
+    limitDespesaDate.setDate(limitDespesaDate.getDate() + diasDespesa);
     
     despesasDb.forEach(d => {
        if (d.dataVencimento && d.status !== 'Pago') {
            const [year, month, day] = d.dataVencimento.split('-');
            const valDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-           if (valDate >= today && valDate <= inTwoDays) {
+           if (valDate >= today && valDate <= limitDespesaDate) {
               alerts.push({ type: 'critical', title: 'Vencimento Próximo', desc: `Despesa "${d.descricao}" no valor de ${formatCurrency(d.valor)} vence no dia ${d.dataVencimento.split('-').reverse().join('/')}.` });
            } else if (valDate < today) {
               alerts.push({ type: 'critical', title: 'Despesa Atrasada', desc: `Despesa "${d.descricao}" no valor de ${formatCurrency(d.valor)} está vencida desde ${d.dataVencimento.split('-').reverse().join('/')}.` });

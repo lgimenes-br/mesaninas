@@ -629,49 +629,49 @@ export default function Orcamentos() {
         </div>
       )}
 
-      {/* Main Table Card */}
-      <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden flex flex-col flex-1">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-mesaninas-creme/50 bg-mesaninas-creme/10 gap-4 shrink-0">
-          <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
-            
-            {/* View Mode Switcher */}
-            <div className="flex bg-mesaninas-creme/60 p-1 rounded-lg border border-mesaninas-creme max-w-max mr-auto">
-              <button
-                type="button"
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                  viewMode === 'list'
-                    ? 'bg-mesaninas-green text-mesaninas-creme shadow-sm'
-                    : 'text-mesaninas-green/75 hover:text-mesaninas-green'
-                }`}
-              >
-                Visualização em Lista
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('kanban')}
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
-                  viewMode === 'kanban'
-                    ? 'bg-mesaninas-green text-mesaninas-creme shadow-sm'
-                    : 'text-mesaninas-green/75 hover:text-mesaninas-green'
-                }`}
-              >
-                Funil de Vendas (Kanban)
-              </button>
-            </div>
+      {/* Header Actions & Switcher */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0 w-full">
+        
+        {/* View Mode Pill Switcher */}
+        <div className="flex-1 flex items-center justify-start">
+          <div className="flex items-center bg-[#f2eede]/60 rounded-md border border-mesaninas-creme/60 max-w-max shadow-sm relative h-12 lg:h-10">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`relative z-10 px-6 h-full flex items-center justify-center text-xs font-bold rounded-md transition-all duration-300 ${
+                viewMode === 'list'
+                  ? 'bg-mesaninas-green text-mesaninas-creme shadow-sm'
+                  : 'text-mesaninas-green hover:bg-[#00382b]/5'
+              }`}
+            >
+              Visualização em Lista
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('kanban')}
+              className={`relative z-10 px-6 h-full flex items-center justify-center text-xs font-bold rounded-md transition-all duration-300 ${
+                viewMode === 'kanban'
+                  ? 'bg-mesaninas-green text-mesaninas-creme shadow-sm'
+                  : 'text-mesaninas-green hover:bg-[#00382b]/5'
+              }`}
+            >
+              Funil de Vendas (Kanban)
+            </button>
           </div>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <span className="text-lg leading-none">+</span> <span>Novo Orçamento</span>
-          </button>
         </div>
 
-        <div className="flex-1 overflow-auto bg-mesaninas-creme/5 flex flex-col">
-          {viewMode === 'list' ? (
-             <div className="flex-1 w-full">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+        >
+          <span className="text-lg leading-none">+</span> <span>Novo Orçamento</span>
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col">
+        {viewMode === 'list' ? (
+           <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm flex-1 w-full flex flex-col overflow-hidden">
+             <div className="flex-1 w-full bg-mesaninas-creme/5 overflow-auto">
                {/* DESKTOP TABLE */}
                <table className="hidden lg:table w-full text-left border-collapse text-sm">
                  <thead className="bg-mesaninas-creme/50 sticky top-0 border-b border-mesaninas-creme/50 z-10 shadow-sm">
@@ -819,10 +819,11 @@ export default function Orcamentos() {
                    )}
                </div>
              </div>
+            </div>
           ) : (
              /* KANBAN CRM VIEW */
-             <div className="flex-1 w-full p-6 bg-[#f4efdc]/20">
-               <div className="grid grid-cols-1 md:grid-cols-4 gap-5 w-full h-full items-stretch pb-2">
+             <div className="flex-1 w-full flex flex-col pt-2">
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full flex-1 items-start pb-4">
                  {KANBAN_COLUMNS.map((col) => {
                     const colOrcamentos = orcamentos.filter(orc => {
                        const statusLower = (orc.status || 'Em Aberto').toLowerCase();
@@ -858,7 +859,7 @@ export default function Orcamentos() {
                           </div>
                           
                           {/* Column Body - Cards List */}
-                          <div className="flex-1 p-3 flex flex-col gap-3.5 overflow-y-auto max-h-[650px] min-h-[450px]">
+                          <div className="flex-1 p-3 flex flex-col gap-3.5 overflow-y-auto">
                              {colOrcamentos.length === 0 ? (
                                 <div className="text-center py-10 text-xs text-mesaninas-green/35 border border-dashed border-mesaninas-creme/60 rounded-xl bg-mesaninas-creme/5 flex flex-col items-center justify-center p-4">
                                    Nenhum orçamento
@@ -959,7 +960,7 @@ export default function Orcamentos() {
              </div>
           )}
         </div>
-      </div>
+      {/* </div> removed */}
 
       <ConfirmDeleteModal
         isOpen={isDeleteDialogOpen}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ViewType = 'dashboard' | 'clientes' | 'fornecedores' | 'estoque' | 'pratos' | 'orcamentos' | 'financeiro' | 'configuracoes' | 'usuarios';
+type ViewType = 'dashboard' | 'clientes' | 'fornecedores' | 'estoque' | 'pratos' | 'orcamentos' | 'financeiro' | 'configuracoes' | 'usuarios' | 'inventario';
 
 interface HeaderProps {
   activeView: ViewType;
@@ -13,6 +13,7 @@ export default function Header({ activeView }: HeaderProps) {
     clientes: 'Clientes',
     fornecedores: 'Fornecedores',
     estoque: 'Estoque',
+    inventario: 'Inventário',
     pratos: 'Cardápio',
     orcamentos: 'Orçamentos',
     configuracoes: 'Configurações',

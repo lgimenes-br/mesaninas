@@ -12,7 +12,8 @@ import {
   LogOut, 
   ChevronDown,
   Menu,
-  X
+  X,
+  Archive
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -21,7 +22,7 @@ import { auth, db } from '../lib/firebase';
 
 import MesaninasLogo from './MesaninasLogo';
 
-type ViewType = 'dashboard' | 'clientes' | 'fornecedores' | 'estoque' | 'pratos' | 'orcamentos' | 'financeiro' | 'configuracoes' | 'usuarios';
+type ViewType = 'dashboard' | 'clientes' | 'fornecedores' | 'estoque' | 'pratos' | 'orcamentos' | 'financeiro' | 'configuracoes' | 'usuarios' | 'inventario';
 
 interface NavbarProps {
   activeView: ViewType;
@@ -109,14 +110,6 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
               )}
             </div>
 
-            <div className={mainNavItemClass(activeView === 'financeiro')} onClick={() => onNavigate('financeiro')}>
-              <LineChart size={16} />
-              <span>Financeiro</span>
-              {activeView === 'financeiro' && (
-                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#e7e873] rounded-full" />
-              )}
-            </div>
-
             <div className={mainNavItemClass(activeView === 'pratos')} onClick={() => onNavigate('pratos')}>
               <Utensils size={16} />
               <span>Cardápio</span>
@@ -129,6 +122,14 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
               <Package size={16} />
               <span>Estoque</span>
               {activeView === 'estoque' && (
+                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#e7e873] rounded-full" />
+              )}
+            </div>
+
+            <div className={mainNavItemClass(activeView === 'inventario')} onClick={() => onNavigate('inventario')}>
+              <Archive size={16} />
+              <span>Inventário</span>
+              {activeView === 'inventario' && (
                 <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#e7e873] rounded-full" />
               )}
             </div>
@@ -197,6 +198,14 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
 
             <div className="flex items-center gap-1 border-l border-white/15 pl-3">
               <button 
+                onClick={() => onNavigate('financeiro')}
+                className={`p-2 text-[#f4efdc]/75 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer ${activeView === 'financeiro' ? 'bg-white/10 text-white' : ''}`}
+                title="Financeiro"
+              >
+                <LineChart size={18} />
+              </button>
+
+              <button 
                 onClick={() => onNavigate('configuracoes')}
                 className={`p-2 text-[#f4efdc]/75 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer ${activeView === 'configuracoes' ? 'bg-white/10 text-white' : ''}`}
                 title="Configurações"
@@ -247,14 +256,6 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
           </div>
 
           <div 
-            className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'financeiro' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
-            onClick={() => { onNavigate('financeiro'); setMobileMenuOpen(false); }}
-          >
-            <LineChart size={18} />
-            <span>Financeiro</span>
-          </div>
-
-          <div 
             className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'pratos' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
             onClick={() => { onNavigate('pratos'); setMobileMenuOpen(false); }}
           >
@@ -268,6 +269,14 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
           >
             <Package size={18} />
             <span>Estoque</span>
+          </div>
+
+          <div 
+            className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'inventario' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
+            onClick={() => { onNavigate('inventario'); setMobileMenuOpen(false); }}
+          >
+            <Archive size={18} />
+            <span>Inventário</span>
           </div>
 
           <div className="pt-2 pb-1 px-2.5 text-[10px] font-bold tracking-widest text-[#f4efdc]/50 uppercase">
@@ -301,6 +310,14 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
           )}
 
           <div className="border-t border-white/10 pt-2 space-y-1.5">
+
+            <div 
+              className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'financeiro' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
+              onClick={() => { onNavigate('financeiro'); setMobileMenuOpen(false); }}
+            >
+              <LineChart size={18} />
+              <span>Financeiro</span>
+            </div>
 
             <div 
               className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'configuracoes' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}

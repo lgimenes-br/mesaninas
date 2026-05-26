@@ -16,6 +16,9 @@ export default function Configuracoes() {
 
   const [politicasCancelamento, setPoliticasCancelamento] = useState('');
   const [regrasQuebra, setRegrasQuebra] = useState('');
+  
+  const [alertaOrcamentoDias, setAlertaOrcamentoDias] = useState<number | ''>('');
+  const [alertaDespesaDias, setAlertaDespesaDias] = useState<number | ''>('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -35,6 +38,8 @@ export default function Configuracoes() {
         setValidadeProposta(data.validadeProposta !== undefined ? data.validadeProposta : '');
         setPoliticasCancelamento(data.politicasCancelamento || '');
         setRegrasQuebra(data.regrasQuebra || '');
+        setAlertaOrcamentoDias(data.alertaOrcamentoDias !== undefined ? data.alertaOrcamentoDias : 5);
+        setAlertaDespesaDias(data.alertaDespesaDias !== undefined ? data.alertaDespesaDias : 2);
       }
       setIsLoading(false);
     });
@@ -81,7 +86,9 @@ export default function Configuracoes() {
         aliquotaNF: Number(aliquotaNF) || 0,
         validadeProposta: Number(validadeProposta) || 0,
         politicasCancelamento,
-        regrasQuebra
+        regrasQuebra,
+        alertaOrcamentoDias: Number(alertaOrcamentoDias) || 5,
+        alertaDespesaDias: Number(alertaDespesaDias) || 2
       }, { merge: true });
       
       setSaveMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
@@ -179,6 +186,23 @@ export default function Configuracoes() {
             <div>
               <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Regras de Quebra de Materiais e Logística</label>
               <textarea value={regrasQuebra} onChange={e => setRegrasQuebra(e.target.value)} rows={4} className="w-full px-3 py-2 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 resize-y focus:border-mesaninas-yellow" />
+            </div>
+          </div>
+        </section>
+
+        {/* CARD 4: Alertas e Notificações */}
+        <section className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 bg-mesaninas-creme/20 border-b border-mesaninas-creme font-serif font-bold text-lg text-mesaninas-green">
+            Dashboard & Alertas (Atenção Necessária)
+          </div>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Dias p/ Alerta: Orçamento Enviado Sem Resposta</label>
+              <input type="number" min="1" value={alertaOrcamentoDias} onChange={e => setAlertaOrcamentoDias(Number(e.target.value))} className="w-full px-3 py-2 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow" placeholder="Ex: 5" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Dias p/ Alerta: Despesas Próximas ao Vencimento</label>
+              <input type="number" min="1" value={alertaDespesaDias} onChange={e => setAlertaDespesaDias(Number(e.target.value))} className="w-full px-3 py-2 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow" placeholder="Ex: 2" />
             </div>
           </div>
         </section>
