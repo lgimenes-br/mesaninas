@@ -339,7 +339,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
                        </td>
                        <td className="px-6 py-4 text-center">
                           <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[11px] font-bold">
-                             {orc.numConvidados} pax
+                             {orc.numConvidados} pessoas
                           </span>
                        </td>
                        <td className="px-6 py-4 text-center">

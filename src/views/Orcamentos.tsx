@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Orcamento, Prato, Cliente } from '../types';
 import { ChevronDown, Check, Pencil, Trash2 } from 'lucide-react';
@@ -25,6 +25,7 @@ export default function Orcamentos() {
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [pratosDB, setPratosDB] = useState<Prato[]>([]);
   const [clientesDB, setClientesDB] = useState<Cliente[]>([]);
+  const [estoqueDB, setEstoqueDB] = useState<ItemEstoque[]>([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -70,7 +71,12 @@ export default function Orcamentos() {
 
   const handleUpdateStatus = async (orcamentoId: string, newStatus: string) => {
     try {
+      const orc = orcamentos.find(o => o.id === orcamentoId);
+      if (!orc) return;
+
+      const batch = writeBatch(db);
       const orcRef = doc(db, 'orcamentos', orcamentoId);
+
       const dataToUpdate: any = { status: newStatus };
       if (newStatus === 'Aprovado' || newStatus === 'Entregue') {
         dataToUpdate.statusPagamento = 'Aguardando';
@@ -78,7 +84,36 @@ export default function Orcamentos() {
       if (userProfile?.nome) {
         dataToUpdate.ultimoEditor = userProfile.nome;
       }
-      await updateDoc(orcRef, dataToUpdate);
+
+      // Handle stock
+      const willBeBaixado = ['Aprovado', 'Entregue'].includes(newStatus);
+      const isCurrentlyBaixado = orc.estoqueBaixado || false;
+      const orcMateriais = orc.materiaisEstoque || [];
+
+      if (!isCurrentlyBaixado && willBeBaixado) {
+        // Deduct items
+        orcMateriais.forEach(mat => {
+           if (mat.materialId) {
+             const estRef = doc(db, 'estoque', mat.materialId);
+             const estAtual = estoqueDB.find(e => e.id === mat.materialId);
+             batch.update(estRef, { quantidade: Math.max(0, (estAtual?.quantidade || 0) - (Number(mat.quantidade) || 0)) });
+           }
+        });
+        dataToUpdate.estoqueBaixado = true;
+      } else if (isCurrentlyBaixado && !willBeBaixado) {
+        // Restore items
+        orcMateriais.forEach(mat => {
+           if (mat.materialId) {
+             const estRef = doc(db, 'estoque', mat.materialId);
+             const estAtual = estoqueDB.find(e => e.id === mat.materialId);
+             batch.update(estRef, { quantidade: (estAtual?.quantidade || 0) + (Number(mat.quantidade) || 0) });
+           }
+        });
+        dataToUpdate.estoqueBaixado = false;
+      }
+
+      batch.update(orcRef, dataToUpdate);
+      await batch.commit();
     } catch (err: any) {
       console.error("Error updating status:", err);
     }
@@ -103,8 +138,11 @@ export default function Orcamentos() {
   
   // Custom multi-select state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [pratosSelecionados, setPratosSelecionados] = useState<Prato[]>([]);
+  const [pratosSelecionados, setPratosSelecionados] = useState<import('../types').PratoOrcamento[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [materiaisEstoque, setMateriaisEstoque] = useState<{ materialId: string; nome: string; quantidade: string | number }[]>([]);
+  const [estoqueBaixado, setEstoqueBaixado] = useState(false);
 
   // Finance states
   const [custosExtras, setCustosExtras] = useState<{ descricao: string; valor: string | number }[]>([]);
@@ -115,6 +153,7 @@ export default function Orcamentos() {
   // Status workflow
   const [status, setStatus] = useState<string>('Em Aberto');
   const [statusPagamento, setStatusPagamento] = useState<'Aguardando' | 'Pago'>('Aguardando');
+  const [imagemUrl, setImagemUrl] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingOrcamentoId, setEditingOrcamentoId] = useState<string | null>(null);
@@ -173,9 +212,17 @@ export default function Orcamentos() {
       setPratosDB(data);
     }, () => {
          setPratosDB([
-            { id: '1', nome: 'Salgados Finos', tipoVenda: 'Por Unidade', precoBase: 35.00, rendimento: 1 },
-            { id: '2', nome: 'Mesa de Frios (Kg)', tipoVenda: 'Por Quilo', precoBase: 120.00, rendimento: 10 },
+            { id: '1', nome: 'Salgados Finos', tipoVenda: 'Por Unidade', rendimento: 1, fornecedoresCustos: [{ fornecedorId: 'f1', nome: 'Cozinha Padrão', custo: 35.00 }] },
+            { id: '2', nome: 'Mesa de Frios (Kg)', tipoVenda: 'Por Quilo', rendimento: 10, fornecedoresCustos: [{ fornecedorId: 'f1', nome: 'Cozinha Padrão', custo: 120.00 }] },
          ]);
+    });
+
+    const unsubEstoque = onSnapshot(collection(db, 'estoque'), (snapshot) => {
+      const data: ItemEstoque[] = [];
+      snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() } as ItemEstoque));
+      setEstoqueDB(data);
+    }, () => {
+         setEstoqueDB([]);
     });
 
     const unsubClientes = onSnapshot(collection(db, 'clientes'), (snapshot) => {
@@ -205,6 +252,7 @@ export default function Orcamentos() {
     return () => {
       unsubOrcamentos();
       unsubPratos();
+      unsubEstoque();
       unsubClientes();
       unsubConfig();
     };
@@ -229,13 +277,35 @@ export default function Orcamentos() {
     setEnderecoEvento(orcamento.enderecoEvento || '');
     setUsarEnderecoCadastro(false);
     setNumConvidados(orcamento.numConvidados || '');
+    setImagemUrl(orcamento.imagemUrl || '');
     
     if (orcamento.pratosSelecionados && pratosDB.length > 0) {
-       const pratosObjects = pratosDB.filter(p => orcamento.pratosSelecionados?.includes(p.nome));
-       setPratosSelecionados(pratosObjects);
+       if (orcamento.pratosSelecionados.length > 0 && typeof orcamento.pratosSelecionados[0] === 'string') {
+         const legacyPratos = (orcamento.pratosSelecionados as any as string[]).map(nome => {
+            const p = pratosDB.find(dbP => dbP.nome === nome);
+            if (!p) return null;
+            const f = p.fornecedoresCustos?.[0];
+            return {
+               pratoId: p.id,
+               nome: p.nome,
+               fornecedorId: f?.fornecedorId || '',
+               fornecedorNome: f?.nome || 'Fornecedor',
+               custo: f?.custo || (p as any).precoBase || 0,
+               tipoVenda: p.tipoVenda,
+               rendimento: p.rendimento || 1,
+               imagemUrl: p.imagemUrl
+            };
+         }).filter(Boolean) as import('../types').PratoOrcamento[];
+         setPratosSelecionados(legacyPratos);
+       } else {
+         setPratosSelecionados(orcamento.pratosSelecionados as import('../types').PratoOrcamento[]);
+       }
     } else {
        setPratosSelecionados([]);
     }
+    
+    setMateriaisEstoque(orcamento.materiaisEstoque || []);
+    setEstoqueBaixado(orcamento.estoqueBaixado || false);
     
     // Migrating legacy custoLogistica to custosExtras if needed
     if (orcamento.custosExtras) {
@@ -268,7 +338,21 @@ export default function Orcamentos() {
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
     try {
-      await deleteDoc(doc(db, 'orcamentos', itemToDelete));
+      const orcToDelete = orcamentos.find(o => o.id === itemToDelete);
+      if (orcToDelete?.estoqueBaixado && orcToDelete.materiaisEstoque) {
+        const batch = writeBatch(db);
+        orcToDelete.materiaisEstoque.forEach(mat => {
+          if (mat.materialId) {
+            const estRef = doc(db, 'estoque', mat.materialId);
+            const estAtual = estoqueDB.find(e => e.id === mat.materialId);
+            batch.update(estRef, { quantidade: (estAtual?.quantidade || 0) + mat.quantidade });
+          }
+        });
+        batch.delete(doc(db, 'orcamentos', itemToDelete));
+        await batch.commit();
+      } else {
+        await deleteDoc(doc(db, 'orcamentos', itemToDelete));
+      }
     } catch (err: any) {
       alert('Erro ao apagar orçamento: ' + err.message);
     } finally {
@@ -278,22 +362,43 @@ export default function Orcamentos() {
   };
 
   const togglePratoSelection = (prato: Prato) => {
-    const exists = pratosSelecionados.find(p => p.id === prato.id);
+    const exists = pratosSelecionados.find(p => p.pratoId === prato.id);
     if (exists) {
-       setPratosSelecionados(pratosSelecionados.filter(p => p.id !== prato.id));
+       setPratosSelecionados(pratosSelecionados.filter(p => p.pratoId !== prato.id));
     } else {
-       setPratosSelecionados([...pratosSelecionados, prato]);
+       const initialFornecedor = prato.fornecedoresCustos?.[0];
+       setPratosSelecionados([...pratosSelecionados, {
+         pratoId: prato.id,
+         nome: prato.nome,
+         fornecedorId: initialFornecedor?.fornecedorId || '',
+         fornecedorNome: initialFornecedor?.nome || 'Fornecedor',
+         custo: initialFornecedor?.custo || (prato as any).precoBase || 0,
+         tipoVenda: prato.tipoVenda,
+         rendimento: prato.rendimento || 1,
+         imagemUrl: prato.imagemUrl
+       }]);
     }
+  };
+
+  const updatePratoFornecedor = (pratoId: string, fornecedorId: string) => {
+     const pratoBase = pratosDB.find(p => p.id === pratoId);
+     const fornecedorSelecionado = pratoBase?.fornecedoresCustos?.find(fc => fc.fornecedorId === fornecedorId);
+     if (!fornecedorSelecionado) return;
+     setPratosSelecionados(prev => prev.map(p => 
+       p.pratoId === pratoId 
+         ? { ...p, fornecedorId, fornecedorNome: fornecedorSelecionado.nome, custo: fornecedorSelecionado.custo }
+         : p
+     ));
   };
 
   const convidados = Number(numConvidados) || 0;
   
   const custoAlimentos = pratosSelecionados.reduce((acc, prato) => {
      const rendimento = Number(prato.rendimento) || 1;
-     const precoBase = Number(prato.precoBase) || 0;
+     const custo = Number(prato.custo) || 0;
      const tipoVenda = prato.tipoVenda || 'Por Quilo';
      const fatorDeMultiplicacao = tipoVenda === 'Por Unidade' ? convidados * rendimento : convidados / rendimento;
-     const custoDoItem = fatorDeMultiplicacao * precoBase;
+     const custoDoItem = fatorDeMultiplicacao * custo;
      return acc + custoDoItem;
   }, 0);
 
@@ -323,17 +428,22 @@ export default function Orcamentos() {
           horaTermino,
           enderecoEvento,
           numConvidados: convidados,
-          pratosSelecionados: pratosSelecionados.map(p => p.nome),
+          pratosSelecionados: pratosSelecionados,
           custosExtras: custosExtras.map(ce => ({ descricao: ce.descricao, valor: parseCurrency(String(ce.valor)) || 0 })),
           custoAlimentos,
           custoTotal: custoOperacionalTotal,
           margemLucro: margem,
           valorVenda: valorVendaSugerido,
           status: status,
+          imagemUrl: imagemUrl,
+          materiaisEstoque: materiaisEstoque.map(m => ({ materialId: m.materialId, nome: m.nome, quantidade: Number(m.quantidade) || 0 })),
           ultimoEditor: userProfile?.nome || undefined,
         };
 
-        if (status === 'Aprovado' || status === 'Entregue') {
+        let willBeBaixado = status === 'Aprovado' || status === 'Entregue';
+        orcamentoData.estoqueBaixado = willBeBaixado;
+
+        if (willBeBaixado) {
            orcamentoData.statusPagamento = statusPagamento;
         } else {
            orcamentoData.statusPagamento = null as any;
@@ -344,13 +454,47 @@ export default function Orcamentos() {
         }
 
       try {
-         if (editingOrcamentoId) {
-            await updateDoc(doc(db, 'orcamentos', editingOrcamentoId), orcamentoData);
-         } else {
-            await addDoc(collection(db, 'orcamentos'), orcamentoData);
+         const batch = writeBatch(db);
+         const orcRef = editingOrcamentoId ? doc(db, 'orcamentos', editingOrcamentoId) : doc(collection(db, 'orcamentos'));
+         
+         const deltas: Record<string, number> = {};
+
+         if (editingOrcamentoId && estoqueBaixado) {
+           const orcAntigo = orcamentos.find(o => o.id === editingOrcamentoId);
+           orcAntigo?.materiaisEstoque?.forEach(mat => {
+             if (mat.materialId) {
+               deltas[mat.materialId] = (deltas[mat.materialId] || 0) + mat.quantidade;
+             }
+           });
          }
+
+         if (willBeBaixado) {
+           materiaisEstoque.forEach(mat => {
+             if (mat.materialId) {
+               deltas[mat.materialId] = (deltas[mat.materialId] || 0) - (Number(mat.quantidade) || 0);
+             }
+           });
+         }
+
+         Object.keys(deltas).forEach(matId => {
+           const delta = deltas[matId];
+           if (delta !== 0) {
+             const estRef = doc(db, 'estoque', matId);
+             const estAtual = estoqueDB.find(e => e.id === matId);
+             batch.update(estRef, { quantidade: Math.max(0, (estAtual?.quantidade || 0) + delta) });
+           }
+         });
+
+         if (editingOrcamentoId) {
+            batch.update(orcRef, orcamentoData);
+         } else {
+            batch.set(orcRef, orcamentoData);
+         }
+         
+         await batch.commit();
+
       } catch (err: any) {
-         console.warn("Save failed, using local local fallback: ", err);
+         console.warn("Save failed, using local fallback: ", err);
          if (editingOrcamentoId) {
              setOrcamentos(prev => prev.map(o => o.id === editingOrcamentoId ? { ...o, ...orcamentoData } as Orcamento : o));
          } else {
@@ -383,6 +527,31 @@ export default function Orcamentos() {
      setMargemLucro(margemPadrao);
      setStatus('Em Aberto');
      setStatusPagamento('Aguardando');
+     setImagemUrl('');
+     setMateriaisEstoque([]);
+     setEstoqueBaixado(false);
+  };
+
+  const addMaterialEstoque = () => {
+    setMateriaisEstoque([...materiaisEstoque, { materialId: '', nome: '', quantidade: '' }]);
+  };
+
+  const updateMaterialEstoque = (index: number, field: string, value: string) => {
+    const newItems = [...materiaisEstoque];
+    if (field === 'materialId') {
+      const e = estoqueDB.find(item => item.id === value);
+      newItems[index].materialId = value;
+      newItems[index].nome = e?.nome || '';
+    } else if (field === 'quantidade') {
+      newItems[index].quantidade = value;
+    }
+    setMateriaisEstoque(newItems);
+  };
+
+  const removeMaterialEstoque = (index: number) => {
+    const newItems = [...materiaisEstoque];
+    newItems.splice(index, 1);
+    setMateriaisEstoque(newItems);
   };
 
   const addCustoExtra = () => {
@@ -540,7 +709,7 @@ export default function Orcamentos() {
                          </td>
                          <td className="px-6 py-4 text-center">
                            <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[11px] font-bold">
-                              {orc.numConvidados} pax
+                              {orc.numConvidados} pessoas
                            </span>
                          </td>
                          <td className="px-6 py-4 text-right text-mesaninas-green font-bold">
@@ -610,7 +779,7 @@ export default function Orcamentos() {
                          </div>
                          <div className="flex items-center gap-2 text-sm text-mesaninas-green/70">
                            <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                           {formatDate(orc.dataEvento)} • {orc.numConvidados} pax
+                           {formatDate(orc.dataEvento)} • {orc.numConvidados} pessoas
                          </div>
                          <div className="mt-1 pt-2 border-t border-mesaninas-creme/50 flex justify-between items-center">
                            <span className="text-xs uppercase font-bold text-mesaninas-green/50 tracking-wide">Valor Venda</span>
@@ -708,13 +877,20 @@ export default function Orcamentos() {
                                            <h4 className="font-bold text-mesaninas-green text-xs line-clamp-2 group-hover:text-mesaninas-green/80">{orc.nomeEvento || 'Serviço de Buffet'}</h4>
                                            <span className="font-semibold text-[11px] text-mesaninas-green/75 truncate mt-0.5">{orc.clienteNome}</span>
                                         </div>
-                                        <div className="shrink-0 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all">
+                                        <div className="shrink-0 flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-all">
                                            <button 
                                              onClick={() => openEditModal(orc)}
                                              className="p-1 hover:bg-mesaninas-creme/50 rounded-md text-mesaninas-green/75 hover:text-mesaninas-yellow"
                                              title="Editar"
                                            >
                                               <Pencil className="w-3.5 h-3.5" />
+                                           </button>
+                                           <button 
+                                             onClick={() => requestDelete(orc.id)}
+                                             className="p-1 hover:bg-red-50 rounded-md text-mesaninas-green/75 hover:text-red-500"
+                                             title="Excluir"
+                                           >
+                                              <Trash2 className="w-3.5 h-3.5" />
                                            </button>
                                            <button 
                                              onClick={() => setPrintOrcamento(orc)}
@@ -732,7 +908,7 @@ export default function Orcamentos() {
                                      <div className="text-mesaninas-green/75 font-sans leading-relaxed flex justify-between items-center">
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] opacity-75 mt-0.5">
                                            <span>📅 {formatDate(orc.dataEvento)}</span>
-                                           <span>• 👥 {orc.numConvidados} pax</span>
+                                           <span>• 👥 {orc.numConvidados} pessoas</span>
                                         </div>
                                         {orc.statusPagamento?.toLowerCase() === 'pago' && (
                                            <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded-md shrink-0 uppercase">Pago</span>
@@ -797,7 +973,7 @@ export default function Orcamentos() {
       {/* Drawer Novo Orçamento */}
       {isModalOpen && (
         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-end z-[60]">
-          <div className="h-full w-full max-w-2xl bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-1/4 duration-200">
+          <div className="h-full w-full max-w-5xl bg-white shadow-2xl flex flex-col animate-in slide-in-from-right-1/4 duration-200">
             <div className="px-4 lg:px-6 py-4 border-b border-mesaninas-creme flex justify-between items-center bg-mesaninas-creme/30 shrink-0 mt-safe">
               <div>
                  <h3 className="font-serif font-bold text-lg text-mesaninas-green tracking-tight">
@@ -811,7 +987,37 @@ export default function Orcamentos() {
               >×</button>
             </div>
             
-            <div className="flex-1 overflow-auto p-4 lg:p-6 space-y-6 bg-mesaninas-creme/10 pb-24">
+            <div className="flex-1 overflow-auto p-4 lg:p-6 bg-mesaninas-creme/10 pb-24">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start h-full max-h-full">
+                {/* Lado Esquerdo - Imagem do Evento / Capa */}
+                <div className="flex flex-col gap-4 sticky top-0">
+                  <div>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">URL da Foto (Capa/Inspiração)</label>
+                    <input
+                      type="url"
+                      value={imagemUrl}
+                      onChange={e => setImagemUrl(e.target.value)}
+                      className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green font-medium"
+                      placeholder="https://exemplo.com/evento.jpg"
+                    />
+                  </div>
+                  <div className="w-full aspect-[4/5] md:aspect-square lg:aspect-[4/3] border-2 border-dashed border-mesaninas-creme/80 rounded-xl flex flex-col items-center justify-center overflow-hidden bg-white/50 relative shadow-sm">
+                    {imagemUrl ? (
+                      <img src={imagemUrl} alt="Preview Evento" referrerPolicy="no-referrer" className="w-full h-full max-h-[500px] object-cover rounded-xl" />
+                    ) : (
+                      <div className="text-center text-mesaninas-green/40 p-6">
+                        <div className="w-16 h-16 bg-mesaninas-creme/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <span className="text-2xl font-serif">?</span>
+                        </div>
+                        <p className="text-sm font-medium">Sem imagem de refêrencia</p>
+                        <p className="text-xs mt-1 leading-relaxed">Adicione a URL acima para definir o moodboard do evento.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Lado Direito - Conteúdo do Orçamento */}
+                <div className="space-y-6">
               
               {/* Infos Básicas */}
               <div className="space-y-4 p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm">
@@ -858,7 +1064,7 @@ export default function Orcamentos() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Convidados (Pax)*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Convidados*</label>
                     <input
                       type="number"
                       min="1"
@@ -971,7 +1177,7 @@ export default function Orcamentos() {
                         <div className="p-1">
                            {pratosDB.length === 0 && <div className="p-3 text-sm text-mesaninas-green/50 text-center">Nenhum prato disponível</div>}
                            {pratosDB.map((prato) => {
-                              const isSelected = !!pratosSelecionados.find(p => p.id === prato.id);
+                              const isSelected = !!pratosSelecionados.find(p => p.pratoId === prato.id);
                               return (
                                  <button
                                     key={prato.id}
@@ -983,7 +1189,9 @@ export default function Orcamentos() {
                                  >
                                     <div className="flex flex-col">
                                        <span>{prato.nome}</span>
-                                       <span className="text-[10px] opacity-70">R$ {prato.precoBase.toFixed(2)} / {prato.tipoVenda}</span>
+                                       <span className="text-[10px] opacity-70">
+                                          R$ {prato.fornecedoresCustos?.[0]?.custo?.toFixed(2) || '0.00'} / {prato.tipoVenda}
+                                       </span>
                                     </div>
                                     {isSelected && <Check className="w-4 h-4 text-mesaninas-green" />}
                                  </button>
@@ -995,17 +1203,95 @@ export default function Orcamentos() {
                 </div>
                 
                 {pratosSelecionados.length > 0 && (
-                   <ul className="mt-4 space-y-2">
-                      {pratosSelecionados.map((prato) => (
-                         <li key={prato.id} className="flex items-center justify-between text-sm bg-mesaninas-creme/20 px-3 py-2 rounded-lg border border-mesaninas-creme/50">
-                            <span className="font-medium text-mesaninas-green">{prato.nome}</span>
-                            <div className="flex items-center gap-3">
-                               <span className="text-xs text-mesaninas-green/60">R$ {prato.precoBase.toFixed(2)}</span>
-                               <button type="button" onClick={() => togglePratoSelection(prato)} className="text-mesaninas-peach hover:text-red-500 font-bold p-1 rounded transition-colors w-8 h-8 flex items-center justify-center">×</button>
+                   <ul className="mt-4 space-y-3">
+                      {pratosSelecionados.map((prato) => {
+                         const pratoRef = pratosDB.find(p => p.id === prato.pratoId);
+                         return (
+                         <li key={prato.pratoId} className="flex flex-col gap-2 text-sm bg-mesaninas-creme/20 px-3 py-3 rounded-lg border border-mesaninas-creme/50 mt-1">
+                            <div className="flex items-center justify-between border-b border-mesaninas-creme/30 pb-2 mb-1 gap-3">
+                              <div className="flex items-center gap-3">
+                                {prato.imagemUrl && (
+                                  <div className="w-10 h-10 rounded-md overflow-hidden border border-mesaninas-creme shrink-0 shadow-sm">
+                                    <img src={prato.imagemUrl} alt={prato.nome} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                <span className="font-bold text-mesaninas-green">{prato.nome}</span>
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <span className="text-xs font-bold text-mesaninas-green">{(prato.custo || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                <button type="button" onClick={() => setPratosSelecionados(prev => prev.filter(p => p.pratoId !== prato.pratoId))} className="text-mesaninas-peach hover:text-red-500 font-bold p-1 rounded transition-colors w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-mesaninas-creme/50 hover:border-red-200">×</button>
+                              </div>
                             </div>
+                            {pratoRef && pratoRef.fornecedoresCustos && pratoRef.fornecedoresCustos.length > 0 && (
+                              <div className="flex flex-col gap-1 mt-1">
+                                <label className="text-[10px] font-bold text-mesaninas-green/60 uppercase tracking-wider">Fornecedor Selecionado</label>
+                                <select 
+                                  value={prato.fornecedorId || ''}
+                                  onChange={(e) => updatePratoFornecedor(prato.pratoId, e.target.value)}
+                                  className="text-xs bg-white border border-mesaninas-creme/80 rounded px-2 h-8 text-mesaninas-green font-medium focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow"
+                                >
+                                  <option value="" disabled>Escolha um fornecedor...</option>
+                                  {pratoRef.fornecedoresCustos.map(fc => (
+                                    <option key={fc.fornecedorId} value={fc.fornecedorId}>
+                                      {fc.nome} - R$ {fc.custo.toFixed(2)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                          </li>
-                      ))}
+                         );
+                      })}
                    </ul>
+                )}
+              </div>
+              
+              {/* Materiais e Insumos de Estoque */}
+              <div className="flex flex-col gap-4 p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm">
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-mesaninas-green/80">Materiais e Insumos de Estoque</h4>
+                  <button type="button" onClick={addMaterialEstoque} className="text-xs font-bold bg-mesaninas-creme/50 hover:bg-mesaninas-creme text-mesaninas-green px-3 py-1.5 rounded-md transition-colors">
+                    + Adicionar Material
+                  </button>
+                </div>
+                {materiaisEstoque.length === 0 ? (
+                  <div className="text-xs text-mesaninas-green/50 text-center py-4 border border-dashed border-mesaninas-creme rounded-lg">Nenhum material selecionado.</div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="hidden lg:grid grid-cols-[1fr_100px_100px_40px] gap-2 mb-1 px-1">
+                       <span className="text-[10px] font-bold text-mesaninas-green/60 uppercase">Item do Estoque</span>
+                       <span className="text-[10px] font-bold text-mesaninas-green/60 uppercase text-center">Quant. Necessária</span>
+                       <span className="text-[10px] font-bold text-mesaninas-green/60 uppercase text-right">Qtd. Disponível</span>
+                       <span></span>
+                    </div>
+                    {materiaisEstoque.map((mat, idx) => {
+                       const estItem = estoqueDB.find(e => e.id === mat.materialId);
+                       const qtdDisp = estItem ? estItem.quantidade : 0;
+                       const matQtd = Number(mat.quantidade) || 0;
+                       const isWarning = matQtd > qtdDisp;
+                       return (
+                       <div key={idx} className="flex flex-col lg:grid lg:grid-cols-[1fr_100px_100px_40px] gap-2 items-start lg:items-center p-3 lg:p-0 border border-mesaninas-creme/50 lg:border-transparent rounded-md lg:rounded-none bg-mesaninas-creme/10 lg:bg-transparent">
+                          <select required value={mat.materialId} onChange={e => updateMaterialEstoque(idx, 'materialId', e.target.value)} className="w-full lg:w-auto px-3 h-10 border border-mesaninas-creme rounded bg-white text-sm focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow">
+                             <option value="" disabled>Selecione...</option>
+                             {estoqueDB.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                          </select>
+                          <div className="w-full lg:w-auto relative focus-within:z-10 mt-1 lg:mt-0">
+                            <label className="lg:hidden text-[10px] text-mesaninas-green/60 font-bold uppercase mb-1 block">Quant. Necessária</label>
+                            <input type="number" required min="1" step="1" value={mat.quantidade} onChange={e => updateMaterialEstoque(idx, 'quantidade', e.target.value)} className={`w-full px-3 h-10 border rounded bg-white text-sm text-center focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow ${isWarning ? 'border-red-400 text-red-600 font-bold bg-red-50/50' : 'border-mesaninas-creme'}`} placeholder="Qtd" />
+                          </div>
+                          <div className="w-full lg:w-auto text-center lg:text-right text-xs font-bold text-mesaninas-green flex justify-between lg:block mt-1 lg:mt-0">
+                            <span className="lg:hidden text-[10px] uppercase text-mesaninas-green/60">Disponível:</span>
+                            {qtdDisp} {estItem?.unidadeMedida || ''}
+                          </div>
+                          <button type="button" onClick={() => removeMaterialEstoque(idx)} className="mt-2 lg:mt-0 p-2 w-full lg:w-10 h-10 text-red-500 hover:bg-red-50 rounded transition-colors flex items-center justify-center shrink-0 border border-red-100 lg:border-transparent bg-white lg:bg-transparent">
+                             <Trash2 className="w-4 h-4" />
+                          </button>
+                          {isWarning && (
+                            <div className="col-span-full text-[10px] text-red-500 font-bold mt-1">Alerta: Quantidade superior ao estoque atual.</div>
+                          )}
+                       </div>
+                    )})}
+                  </div>
                 )}
               </div>
               
@@ -1095,7 +1381,8 @@ export default function Orcamentos() {
                     </div>
                  </div>
               </div>
-
+                </div>
+              </div>
             </div>
             
             <div className="px-4 lg:px-6 py-4 border-t border-mesaninas-creme bg-white flex justify-end gap-3 shrink-0 pb-safe z-10 w-full rounded-b-xl lg:rounded-none">
@@ -1109,7 +1396,7 @@ export default function Orcamentos() {
               </button>
               <button
                 onClick={handleCadastrar}
-                disabled={isSubmitting || !selectedClienteId || !nomeEvento || !dataEvento || !convidados || pratosSelecionados.length === 0}
+                disabled={isSubmitting || !selectedClienteId || !nomeEvento || !dataEvento || !convidados || pratosSelecionados.length === 0 || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > e.quantidade; })}
                 className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Gerando...' : (editingOrcamentoId ? 'Atualizar Orçamento' : 'Salvar Proposta')}
@@ -1211,6 +1498,11 @@ export default function Orcamentos() {
                      </div>
 
                      {/* 2. CUSTOMER & EVENT DETAILS */}
+                     {printOrcamento.imagemUrl && (
+                        <div className="w-full aspect-[21/9] rounded-xl overflow-hidden mb-6 border border-gray-200">
+                           <img src={printOrcamento.imagemUrl} alt="Moodboard" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                        </div>
+                     )}
                      <div className="space-y-4">
                         <h2 className="text-sm font-sans font-bold uppercase tracking-wider text-mesaninas-green border-b border-gray-100 pb-1.5 matches-print-text-dark">
                            Dados da Proposta Comercial e Evento
@@ -1233,8 +1525,8 @@ export default function Orcamentos() {
                               </span>
                            </div>
                            <div className="flex flex-col gap-1">
-                              <span className="text-[10px] uppercase font-bold text-gray-400">Número de Convidados (Pax)</span>
-                              <span className="font-bold text-mesaninas-green text-base">{printOrcamento.numConvidados} Convidados (Pax)</span>
+                              <span className="text-[10px] uppercase font-bold text-gray-400">Número de Convidados</span>
+                              <span className="font-bold text-mesaninas-green text-base">{printOrcamento.numConvidados} Convidados</span>
                            </div>
                         </div>
                      </div>
@@ -1254,9 +1546,15 @@ export default function Orcamentos() {
                                  // Handle both string and structure arrays beautifully
                                  const pratoNome = typeof pratoObj === 'string' ? pratoObj : (pratoObj.nome || pratoObj.id);
                                  const pratoDesc = pratoObj.descricao || '';
+                                 const pratoImg = pratoObj.imagemUrl;
                                  return (
                                     <li key={index} className="flex gap-4 items-start pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                                        <span className="w-1.5 h-1.5 rounded-full bg-mesaninas-yellow mt-2 shrink-0"></span>
+                                       {pratoImg && (
+                                          <div className="w-16 h-16 rounded overflow-hidden border border-gray-200 shrink-0 shadow-sm print:shadow-none">
+                                             <img src={pratoImg} alt={pratoNome} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                          </div>
+                                       )}
                                        <div className="space-y-1">
                                           <h4 className="font-serif font-bold text-gray-800 text-[15px] leading-snug">{pratoNome}</h4>
                                           {pratoDesc && <p className="text-xs text-gray-500 font-sans leading-relaxed">{pratoDesc}</p>}

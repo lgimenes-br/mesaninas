@@ -5,6 +5,8 @@ export interface Usuario {
   perfil: 'Admin' | 'Fornecedor' | 'Cliente';
   status: 'Ativo' | 'Inativo';
   fotoPerfil?: string;
+  isOnline?: boolean;
+  ultimoAcesso?: any;
 }
 
 export interface Cliente {
@@ -54,13 +56,30 @@ export interface ItemEstoque {
   fornecedoresRelacionados?: string[];
 }
 
+export interface FornecedorCusto {
+  fornecedorId: string;
+  nome: string;
+  custo: number;
+}
+
 export interface Prato {
   id: string;
   nome: string;
   tipoVenda: 'Por Unidade' | 'Por Quilo';
-  precoBase: number;
   rendimento: number;
-  fornecedoresRelacionados?: string[];
+  fornecedoresCustos: FornecedorCusto[];
+  imagemUrl?: string;
+}
+
+export interface PratoOrcamento {
+  pratoId: string;
+  nome: string;
+  fornecedorId: string;
+  fornecedorNome: string;
+  custo: number;
+  tipoVenda: 'Por Unidade' | 'Por Quilo';
+  rendimento: number;
+  imagemUrl?: string;
 }
 
 export interface Orcamento {
@@ -73,13 +92,16 @@ export interface Orcamento {
   horaTermino?: string;
   enderecoEvento?: string;
   numConvidados: number;
-  pratosSelecionados: string[];
+  pratosSelecionados: PratoOrcamento[] | string[]; // Backwards compatibility for string[]
   custosExtras?: { descricao: string; valor: number }[];
   custoAlimentos: number;
   custoLogistica?: number; // legacy
   custoTotal: number;
   margemLucro: number;
   valorVenda: number;
+  imagemUrl?: string;
+  materiaisEstoque?: { materialId: string; nome: string; quantidade: number }[];
+  estoqueBaixado?: boolean;
   status: 'Rascunho' | 'Em Aberto' | 'Enviado' | 'Em Negociação' | 'Aprovado' | 'Entregue' | 'Recusado';
   statusPagamento?: 'Aguardando' | 'Pago';
   createdAt?: string;

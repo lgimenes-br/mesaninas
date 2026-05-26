@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import MesaninasLogo from '../components/MesaninasLogo';
 
@@ -32,10 +32,16 @@ export default function Login() {
           email: user.email,
           perfil: profileType,
           isAdmin: false,
-          status: 'Ativo'
+          status: 'Ativo',
+          isOnline: true,
+          ultimoAcesso: serverTimestamp()
         });
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await updateDoc(doc(db, 'usuarios', userCredential.user.uid), {
+          isOnline: true,
+          ultimoAcesso: serverTimestamp()
+        });
       }
     } catch (err: any) {
       console.error(err);
@@ -50,17 +56,17 @@ export default function Login() {
   };
 
   return (
-    <div className="flex w-full h-screen items-center justify-center bg-mesaninas-creme bg-grid-pattern text-mesaninas-green p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-mesaninas-creme max-w-sm w-full flex flex-col items-center">
+    <div className="flex w-full h-screen items-center justify-center bg-mesaninas-creme bg-grid-pattern p-4">
+      <div className="bg-[#00382b] p-8 rounded-2xl shadow-xl border border-[#00382b]/30 max-w-sm w-full flex flex-col items-center">
         <div className="mb-8 mt-4 flex justify-center w-full">
-          <MesaninasLogo className="h-8 sm:h-10 text-mesaninas-green" />
+          <MesaninasLogo className="h-8 sm:h-10 text-[#e7e873]" />
         </div>
-        <p className="text-sm text-mesaninas-green/60 mb-8 text-center">
+        <p className="text-sm text-white/80 mb-8 text-center">
           {isRegisterMode ? 'Crie sua conta de administrador.' : 'Faça login para acessar o sistema.'}
         </p>
 
         {error && (
-          <div className="w-full bg-red-100 text-red-800 text-xs p-3 rounded-md mb-4 text-center">
+          <div className="w-full bg-red-900/50 text-red-100 border border-red-500/30 text-xs p-3 rounded-md mb-4 text-center">
             {error}
           </div>
         )}
@@ -69,21 +75,21 @@ export default function Login() {
           {isRegisterMode && (
             <>
               <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Nome Completo</label>
+                <label className="block text-xs font-semibold text-white/90 mb-1">Nome Completo</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 h-12 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+                  className="w-full px-4 h-12 bg-white text-[#00382b] border border-mesaninas-creme/50 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#e7e873]/50 focus:border-[#e7e873]"
                   placeholder="Ex: Ana Maria"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Desejo me cadastrar como:</label>
+                <label className="block text-xs font-semibold text-white/90 mb-1">Desejo me cadastrar como:</label>
                 <select
                   value={profileType}
                   onChange={(e) => setProfileType(e.target.value)}
-                  className="w-full px-4 h-12 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow bg-white"
+                  className="w-full px-4 h-12 bg-white text-[#00382b] border border-mesaninas-creme/50 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#e7e873]/50 focus:border-[#e7e873]"
                 >
                   <option value="Cliente">Cliente</option>
                   <option value="Fornecedor">Fornecedor</option>
@@ -92,23 +98,23 @@ export default function Login() {
             </>
           )}
           <div>
-            <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">E-mail</label>
+            <label className="block text-xs font-semibold text-white/90 mb-1">E-mail</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 h-12 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+              className="w-full px-4 h-12 bg-white text-[#00382b] border border-mesaninas-creme/50 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#e7e873]/50 focus:border-[#e7e873]"
               placeholder="Digite seu e-mail"
               required
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Senha</label>
+            <label className="block text-xs font-semibold text-white/90 mb-1">Senha</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 h-12 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+              className="w-full px-4 h-12 bg-white text-[#00382b] border border-mesaninas-creme/50 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#e7e873]/50 focus:border-[#e7e873]"
               placeholder={isRegisterMode ? "Mínimo 6 caracteres" : "Digite sua senha"}
               required
             />
@@ -116,17 +122,17 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 h-12 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-70"
+            className="w-full mt-2 h-12 bg-[#e7e873] hover:bg-[#e7e873]/90 text-[#00382b] text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-70"
           >
             {loading ? 'Aguarde...' : (isRegisterMode ? 'Criar Conta' : 'Entrar')}
           </button>
         </form>
         
-        <div className="mt-6 text-xs text-mesaninas-green/70">
+        <div className="mt-6 text-xs text-white/75">
           {isRegisterMode ? (
-            <p>Já tem uma conta? <button type="button" onClick={() => setIsRegisterMode(false)} className="font-bold underline text-mesaninas-green">Fazer login</button></p>
+            <p>Já tem uma conta? <button type="button" onClick={() => setIsRegisterMode(false)} className="font-bold underline text-[#e7e873] hover:text-[#e7e873]/80">Fazer login</button></p>
           ) : (
-            <p>Ainda não tem acesso? <button type="button" onClick={() => setIsRegisterMode(true)} className="font-bold underline text-mesaninas-green">Cadastre-se</button></p>
+            <p>Ainda não tem acesso? <button type="button" onClick={() => setIsRegisterMode(true)} className="font-bold underline text-[#e7e873] hover:text-[#e7e873]/80">Cadastre-se</button></p>
           )}
         </div>
       </div>

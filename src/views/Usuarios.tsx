@@ -41,6 +41,24 @@ export default function Usuarios() {
     }
   };
 
+  const formatTimestamp = (timestamp?: any) => {
+    if (!timestamp) return '';
+    let dateObj;
+    if (timestamp.toDate) {
+      dateObj = timestamp.toDate();
+    } else if (timestamp.seconds) {
+      dateObj = new Date(timestamp.seconds * 1000);
+    } else {
+      dateObj = new Date(timestamp);
+    }
+    
+    if (isNaN(dateObj.getTime())) return '';
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }).format(dateObj).replace(',', ' às');
+  };
+
   const openNewModal = () => {
     setEditingUser(null);
     setNome('');
@@ -233,6 +251,7 @@ export default function Usuarios() {
             <tr>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Nome</th>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">E-mail</th>
+              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Conexão</th>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Perfil</th>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Status</th>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Ações</th>
@@ -241,7 +260,7 @@ export default function Usuarios() {
           <tbody className="divide-y divide-mesaninas-creme/50">
             {usuarios.length === 0 ? (
                <tr>
-                 <td colSpan={5} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum usuário cadastrado.</td>
+                 <td colSpan={6} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum usuário cadastrado.</td>
                </tr>
             ) : (
               usuarios.map((user) => (
@@ -249,12 +268,22 @@ export default function Usuarios() {
                   <td className="px-6 py-4 font-medium text-mesaninas-green">{user.nome}</td>
                   <td className="px-6 py-4 text-mesaninas-green/70 text-sm">{user.email}</td>
                   <td className="px-6 py-4 text-center">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${user.isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}`}>
+                        {user.isOnline ? 'ONLINE' : 'OFFLINE'}
+                      </span>
+                      {!user.isOnline && user.ultimoAcesso && (
+                        <span className="text-[10px] text-gray-500">Último acesso: {formatTimestamp(user.ultimoAcesso)}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center">
                     <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${user.perfil === 'Admin' ? 'bg-indigo-100 text-indigo-800' : user.perfil === 'Fornecedor' ? 'bg-orange-100 text-orange-800' : 'bg-mesaninas-creme/60 text-mesaninas-green'}`}>
                       {user.perfil?.toUpperCase() || 'CLIENTE'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${user.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${user.status === 'Ativo' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
                       {user.status?.toUpperCase() || 'ATIVO'}
                     </span>
                   </td>

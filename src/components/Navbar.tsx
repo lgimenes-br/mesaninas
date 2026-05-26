@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
 import MesaninasLogo from './MesaninasLogo';
 
@@ -48,13 +49,18 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
+      if (userProfile?.uid) {
+        await updateDoc(doc(db, 'usuarios', userProfile.uid), {
+          isOnline: false
+        });
+      }
       await signOut(auth);
     } catch (error) {
       console.error("Erro ao sair", error);
     }
   };
 
-  const isCadastrosActive = ['clientes', 'fornecedores', 'pratos', 'estoque'].includes(activeView);
+  const isCadastrosActive = ['clientes', 'fornecedores', 'usuarios'].includes(activeView);
 
   const getInitials = (nome?: string) => {
     if (!nome) return 'U';
@@ -111,6 +117,22 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
               )}
             </div>
 
+            <div className={mainNavItemClass(activeView === 'pratos')} onClick={() => onNavigate('pratos')}>
+              <Utensils size={16} />
+              <span>Cardápio</span>
+              {activeView === 'pratos' && (
+                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#e7e873] rounded-full" />
+              )}
+            </div>
+
+            <div className={mainNavItemClass(activeView === 'estoque')} onClick={() => onNavigate('estoque')}>
+              <Package size={16} />
+              <span>Estoque</span>
+              {activeView === 'estoque' && (
+                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#e7e873] rounded-full" />
+              )}
+            </div>
+
             {/* CADASTROS DROPDOWN */}
             <div 
               ref={dropdownRef}
@@ -140,28 +162,16 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
                       <Truck size={16} className="opacity-70" />
                       <span>Fornecedores</span>
                     </div>
-                    <div className={dropdownItemClass('pratos')} onClick={() => { onNavigate('pratos'); setDropdownOpen(false); }}>
-                      <Utensils size={16} className="opacity-70" />
-                      <span>Cardápio</span>
-                    </div>
-                    <div className={dropdownItemClass('estoque')} onClick={() => { onNavigate('estoque'); setDropdownOpen(false); }}>
-                      <Package size={16} className="opacity-70" />
-                      <span>Estoque</span>
-                    </div>
+                    {userProfile?.perfil === 'Admin' && (
+                      <div className={dropdownItemClass('usuarios')} onClick={() => { onNavigate('usuarios'); setDropdownOpen(false); }}>
+                        <ShieldCheck size={16} className="opacity-70" />
+                        <span>Usuários</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
-
-            {userProfile?.perfil === 'Admin' && (
-              <div className={mainNavItemClass(activeView === 'usuarios')} onClick={() => onNavigate('usuarios')}>
-                <ShieldCheck size={16} />
-                <span>Usuários</span>
-                {activeView === 'usuarios' && (
-                  <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#e7e873] rounded-full" />
-                )}
-              </div>
-            )}
           </div>
 
           {/* RIGHT: USER INFO AND UTILITIES */}
@@ -244,6 +254,22 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
             <span>Financeiro</span>
           </div>
 
+          <div 
+            className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'pratos' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
+            onClick={() => { onNavigate('pratos'); setMobileMenuOpen(false); }}
+          >
+            <Utensils size={18} />
+            <span>Cardápio</span>
+          </div>
+
+          <div 
+            className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'estoque' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
+            onClick={() => { onNavigate('estoque'); setMobileMenuOpen(false); }}
+          >
+            <Package size={18} />
+            <span>Estoque</span>
+          </div>
+
           <div className="pt-2 pb-1 px-2.5 text-[10px] font-bold tracking-widest text-[#f4efdc]/50 uppercase">
             Cadastros
           </div>
@@ -264,32 +290,17 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
             <span>Fornecedores</span>
           </div>
 
-          <div 
-            className={`flex items-center gap-2.5 p-2.5 pl-6 rounded-lg text-sm font-medium ${activeView === 'pratos' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
-            onClick={() => { onNavigate('pratos'); setMobileMenuOpen(false); }}
-          >
-            <Utensils size={18} />
-            <span>Cardápio</span>
-          </div>
-
-          <div 
-            className={`flex items-center gap-2.5 p-2.5 pl-6 rounded-lg text-sm font-medium ${activeView === 'estoque' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
-            onClick={() => { onNavigate('estoque'); setMobileMenuOpen(false); }}
-          >
-            <Package size={18} />
-            <span>Estoque</span>
-          </div>
+          {userProfile?.perfil === 'Admin' && (
+            <div 
+              className={`flex items-center gap-2.5 p-2.5 pl-6 rounded-lg text-sm font-medium ${activeView === 'usuarios' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
+              onClick={() => { onNavigate('usuarios'); setMobileMenuOpen(false); }}
+            >
+              <ShieldCheck size={18} />
+              <span>Usuários</span>
+            </div>
+          )}
 
           <div className="border-t border-white/10 pt-2 space-y-1.5">
-            {userProfile?.perfil === 'Admin' && (
-              <div 
-                className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'usuarios' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
-                onClick={() => { onNavigate('usuarios'); setMobileMenuOpen(false); }}
-              >
-                <ShieldCheck size={18} />
-                <span>Usuários</span>
-              </div>
-            )}
 
             <div 
               className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'configuracoes' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
