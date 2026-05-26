@@ -35,7 +35,7 @@ export default function App() {
     <div className="flex flex-col w-full h-screen overflow-hidden font-sans bg-mesaninas-creme bg-grid-pattern text-mesaninas-green">
       <Navbar activeView={activeView} onNavigate={setActiveView} />
       <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
-        <div className="max-w-7xl w-full mx-auto px-4 lg:px-6 py-4 flex-1 flex flex-col min-w-0">
+        <div className="w-full px-4 md:px-6 lg:px-8 py-4 flex-1 flex flex-col min-w-0">
           <Header activeView={activeView} />
           <div className="flex-1 mt-2 pb-6 min-h-0">
             {activeView === 'dashboard' && <Dashboard />}
