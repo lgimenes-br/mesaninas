@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "cliente": {
+      "title": "Cliente",
+      "description": "Dados do cliente do Catering Mesaninas",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "telefone": { "type": "string" },
+        "email": { "type": "string" },
+        "cpf_cnpj": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["nome", "telefone", "email"]
+    },
+    "ingrediente": {
+       "title": "Ingrediente",
+       "description": "Ingredientes e custos unitários",
+       "type": "object",
+       "properties": {
+          "nome": { "type": "string" },
+          "unidadeMedida": { "type": "string" },
+          "custoUnitario": { "type": "number" }
+       },
+       "required": ["nome", "unidadeMedida", "custoUnitario"]
+    },
+    "prato": {
+      "title": "Prato",
+      "description": "Prato servido pela empresa",
+      "type": "object",
+      "properties": {
+         "nome": { "type": "string" },
+         "descricao": { "type": "string" },
+         "precoBase": { "type": "number" },
+         "ingredientesRef": { "type": "array" }
+      },
+      "required": ["nome", "precoBase", "ingredientesRef"]
+    },
+    "orcamento": {
+      "title": "Orcamento",
+      "description": "Orçamentos para os clientes",
+      "type": "object",
+      "properties": {
+        "clienteId": { "type": "string", "$ref": "#/entities/cliente" },
+        "dataEvento": { "type": "string" },
+        "numConvidados": { "type": "number" },
+        "pratosSelecionados": { "type": "array" },
+        "custoTotal": { "type": "number" },
+        "valorVenda": { "type": "number" },
+        "status": { "type": "string", "enum": ["pendente", "aprovado", "rejeitado", "cancelado"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["clienteId", "dataEvento", "numConvidados", "custoTotal", "valorVenda", "status"]
+    }
+  },
+  "firestore": {
+    "/clientes/{clienteId}": {
+      "schema": { "$ref": "#/entities/cliente" },
+      "description": "Lista de clientes"
+    },
+    "/ingredientes/{ingredienteId}": {
+      "schema": { "$ref": "#/entities/ingrediente" },
+      "description": "Controle de estoque"
+    },
+    "/pratos/{pratoId}": {
+       "schema": { "$ref": "#/entities/prato" },
+       "description": "Cardápio do sistema"
+    },
+    "/orcamentos/{orcamentoId}": {
+       "schema": { "$ref": "#/entities/orcamento" },
+       "description": "Gestão de orçamentos"
+    }
+  }
+}

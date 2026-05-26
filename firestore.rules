@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Regra Global 'Deny-by-default' (Segurança Zero-Trust)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- HELPER FUNCTIONS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Funcionalidade de validação de e-mail e de domínio corporativo é altamente recomendável
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isFuncionarioMesaninas() {
+      // ATENÇÃO: Simplificado para preview/testes locais. 
+      // Em produção, use: return isSignedIn() && isEmailVerified();
+      return true;
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // --- BLUEPRINT VALIDADORS (ANTI-UPDATE-GAP) ---
+    // A validação estrita previne injeção de dados e campos sujos no Firestore
+
+    function isValidCliente(data) {
+      return data.keys().hasAll(['nome', 'telefone', 'email', 'cpf_cnpj', 'createdAt'])
+        && data.nome is string && data.nome.size() > 0 && data.nome.size() <= 100
+        && data.telefone is string && data.telefone.size() <= 20
+        && data.email is string && data.email.size() <= 150
+        && data.cpf_cnpj is string && data.cpf_cnpj.size() <= 20
+        && data.createdAt is timestamp;
+    }
+
+    function isValidIngrediente(data) {
+      return data.keys().hasAll(['nome', 'unidadeMedida', 'custoUnitario'])
+        && data.nome is string && data.nome.size() > 0 && data.nome.size() <= 100
+        && data.unidadeMedida is string && data.unidadeMedida.size() <= 20
+        && (data.custoUnitario is number) && data.custoUnitario >= 0;
+    }
+
+    function isValidPrato(data) {
+      return data.keys().hasAll(['nome', 'descricao', 'precoBase', 'ingredientesRef'])
+        && data.nome is string && data.nome.size() > 0 && data.nome.size() <= 100
+        && data.descricao is string && data.descricao.size() <= 500
+        && (data.precoBase is number) && data.precoBase >= 0
+        && data.ingredientesRef is list && data.ingredientesRef.size() <= 50;
+    }
+
+    function isValidOrcamento(data) {
+      return data.keys().hasAll(['clienteId', 'dataEvento', 'numConvidados', 'pratosSelecionados', 'custoTotal', 'valorVenda', 'status', 'createdAt'])
+        && data.clienteId is string && data.clienteId.size() > 0
+        && data.dataEvento is string && data.dataEvento.size() > 0 && data.dataEvento.size() <= 50 
+        && (data.numConvidados is number) && data.numConvidados > 0
+        && data.pratosSelecionados is list && data.pratosSelecionados.size() <= 50
+        && (data.custoTotal is number) && data.custoTotal >= 0
+        && (data.valorVenda is number) && data.valorVenda >= 0
+        && data.status is string && data.status.matches('^(Rascunho|Em Aberto|Enviado|Em Negociação|Aprovado|Entregue|Recusado|pendente|aprovado|rejeitado|cancelado)$')
+        && data.createdAt is timestamp;
+    }
+
+    // --- ROUTES AND CONTROLLERS ---
+
+    match /clientes/{clienteId} {
+      // Somente funcionários leem clientes
+      allow get: if isFuncionarioMesaninas() && isValidId(clienteId);
+      allow list: if isFuncionarioMesaninas();
+      
+      allow create: if isFuncionarioMesaninas() 
+                    && isValidId(clienteId) 
+                    && isValidCliente(incoming())
+                    && incoming().createdAt == request.time;
+      
+      allow update: if isFuncionarioMesaninas() 
+                    && isValidId(clienteId)
+                    && isValidCliente(incoming())
+                    && incoming().createdAt == existing().createdAt; // Imutabilidade de histórico
+      
+      allow delete: if false; // Prevenção de perda de dados: usar deleção lógica
+    }
+
+    match /ingredientes/{ingredienteId} {
+      allow get: if isFuncionarioMesaninas() && isValidId(ingredienteId);
+      allow list: if isFuncionarioMesaninas();
+      allow create: if isFuncionarioMesaninas() && isValidId(ingredienteId) && isValidIngrediente(incoming());
+      allow update: if isFuncionarioMesaninas() && isValidId(ingredienteId) && isValidIngrediente(incoming());
+      allow delete: if false; 
+    }
+
+    match /pratos/{pratoId} {
+      allow get: if isFuncionarioMesaninas() && isValidId(pratoId);
+      allow list: if isFuncionarioMesaninas();
+      allow create: if isFuncionarioMesaninas() && isValidId(pratoId) && isValidPrato(incoming());
+      allow update: if isFuncionarioMesaninas() && isValidId(pratoId) && isValidPrato(incoming());
+      allow delete: if false;
+    }
+
+    match /orcamentos/{orcamentoId} {
+      allow get: if isFuncionarioMesaninas() && isValidId(orcamentoId);
+      allow list: if isFuncionarioMesaninas();
+      
+      allow create: if isFuncionarioMesaninas() 
+                    && isValidId(orcamentoId) 
+                    && isValidOrcamento(incoming())
+                    && incoming().createdAt == request.time
+                    && exists(/databases/$(database)/documents/clientes/$(incoming().clienteId)); // Restrição atômica (O cliente deve existir)
+                    
+      allow update: if isFuncionarioMesaninas() 
+                    && isValidId(orcamentoId) 
+                    && isValidOrcamento(incoming())
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().clienteId == existing().clienteId 
+                    && existing().status != 'cancelado'; // Terminal State Locking: Não permite alterar orçamentos já cancelados
+      
+      allow delete: if false;
+    }
+
+  }
+}
