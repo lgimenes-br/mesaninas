@@ -243,12 +243,12 @@ export default function Orcamentos() {
 
     setMargemLucro(orcamento.margemLucro !== undefined ? orcamento.margemLucro : 20);
     
-    // Map legacy status if needed
+    // Map legacy status if needed to exact kanban column IDs
     const s = orcamento.status as string;
-    if (s === 'Aprovado' || s === 'aprovado') setStatus('Aprovado');
+    if (s === 'Aprovado' || s === 'aprovado' || s === 'Entregue') setStatus('Aprovado');
     else if (s === 'Enviado') setStatus('Enviado');
-    else if (s === 'Entregue' || s === 'concluido') setStatus('Entregue');
-    else setStatus('Rascunho');
+    else if (s === 'Recusado' || s === 'concluido') setStatus('Recusado');
+    else setStatus('Em Aberto');
 
     setStatusPagamento(orcamento.statusPagamento || 'Aguardando');
     
@@ -374,7 +374,7 @@ export default function Orcamentos() {
      setPratosSelecionados([]);
      setCustosExtras([]);
      setMargemLucro(margemPadrao);
-     setStatus('Rascunho');
+     setStatus('Em Aberto');
      setStatusPagamento('Aguardando');
   };
 
@@ -732,15 +732,17 @@ export default function Orcamentos() {
                                         
                                         {/* Status Switcher touch compatible selector screen */}
                                         <select
-                                          value={orc.status || 'Em Aberto'}
+                                          value={
+                                            (orc.status === 'Rascunho' ? 'Em Aberto' : 
+                                             orc.status === 'Entregue' ? 'Aprovado' : 
+                                             orc.status) || 'Em Aberto'
+                                          }
                                           onChange={(e) => handleUpdateStatus(orc.id, e.target.value)}
                                           className="px-2 py-0.5 border border-mesaninas-creme/80 rounded bg-mesaninas-creme/20 text-[10px] text-mesaninas-green font-bold focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow hover:bg-white cursor-pointer"
                                         >
                                            <option value="Em Aberto">Rascunho</option>
-                                           <option value="Rascunho">Rascunho</option>
-                                           <option value="Enviado">Enviado</option>
+                                           <option value="Enviado">Orçamento Enviado</option>
                                            <option value="Aprovado">Aprovado</option>
-                                           <option value="Entregue">Entregue</option>
                                            <option value="Recusado">Concluído</option>
                                         </select>
                                      </div>
@@ -880,12 +882,10 @@ export default function Orcamentos() {
                           onChange={e => setStatus(e.target.value as any)}
                           className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green font-medium"
                         >
-                          <option value="Em Aberto">Rascunho (Em Aberto)</option>
-                          <option value="Rascunho">Rascunho</option>
+                          <option value="Em Aberto">Rascunho</option>
                           <option value="Enviado">Orçamento Enviado</option>
                           <option value="Aprovado">Aprovado</option>
-                          <option value="Entregue">Entregue</option>
-                          <option value="Recusado">Concluído (Recusado)</option>
+                          <option value="Recusado">Concluído</option>
                         </select>
                      </div>
                      {(status === 'Aprovado' || status === 'Entregue') && (
