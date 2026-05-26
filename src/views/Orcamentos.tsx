@@ -413,7 +413,7 @@ export default function Orcamentos() {
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClienteId || !nomeEvento || !dataEvento || !numConvidados) return;
+    if (!nomeEvento) return;
 
     const clienteAtivo = clientesDB.find(c => c.id === selectedClienteId);
 
@@ -998,9 +998,8 @@ export default function Orcamentos() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Select de Cliente */}
                   <div className="col-span-1 lg:col-span-1">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Cliente*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Cliente</label>
                     <select
-                      required
                       value={selectedClienteId}
                       onChange={e => setSelectedClienteId(e.target.value)}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green font-medium"
@@ -1029,21 +1028,19 @@ export default function Orcamentos() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {/* Datas e Horários */}
                   <div className="col-span-1">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Data do Evento*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Data do Evento</label>
                     <input
                       type="date"
-                      required
                       value={dataEvento}
                       onChange={e => setDataEvento(e.target.value)}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
                     />
                   </div>
                   <div className="col-span-1">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Convidados*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Convidados</label>
                     <input
                       type="number"
                       min="1"
-                      required
                       value={numConvidados}
                       onChange={e => setNumConvidados(e.target.value ? Number(e.target.value) : '')}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
@@ -1245,13 +1242,13 @@ export default function Orcamentos() {
                        const isWarning = matQtd > qtdDisp;
                        return (
                        <div key={idx} className="flex flex-col lg:grid lg:grid-cols-[1fr_100px_100px_40px] gap-2 items-start lg:items-center p-3 lg:p-0 border border-mesaninas-creme/50 lg:border-transparent rounded-md lg:rounded-none bg-mesaninas-creme/10 lg:bg-transparent">
-                          <select required value={mat.materialId} onChange={e => updateMaterialEstoque(idx, 'materialId', e.target.value)} className="w-full lg:w-auto px-3 h-10 border border-mesaninas-creme rounded bg-white text-sm focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow">
+                          <select value={mat.materialId} onChange={e => updateMaterialEstoque(idx, 'materialId', e.target.value)} className="w-full lg:w-auto px-3 h-10 border border-mesaninas-creme rounded bg-white text-sm focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow">
                              <option value="" disabled>Selecione...</option>
                              {estoqueDB.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
                           </select>
                           <div className="w-full lg:w-auto relative focus-within:z-10 mt-1 lg:mt-0">
                             <label className="lg:hidden text-[10px] text-mesaninas-green/60 font-bold uppercase mb-1 block">Quant. Necessária</label>
-                            <input type="number" required min="1" step="1" value={mat.quantidade} onChange={e => updateMaterialEstoque(idx, 'quantidade', e.target.value)} className={`w-full px-3 h-10 border rounded bg-white text-sm text-center focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow ${isWarning ? 'border-red-400 text-red-600 font-bold bg-red-50/50' : 'border-mesaninas-creme'}`} placeholder="Qtd" />
+                            <input type="number" min="1" step="1" value={mat.quantidade} onChange={e => updateMaterialEstoque(idx, 'quantidade', e.target.value)} className={`w-full px-3 h-10 border rounded bg-white text-sm text-center focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow ${isWarning ? 'border-red-400 text-red-600 font-bold bg-red-50/50' : 'border-mesaninas-creme'}`} placeholder="Qtd" />
                           </div>
                           <div className="w-full lg:w-auto text-center lg:text-right text-xs font-bold text-mesaninas-green flex justify-between lg:block mt-1 lg:mt-0">
                             <span className="lg:hidden text-[10px] uppercase text-mesaninas-green/60">Disponível:</span>
@@ -1372,7 +1369,7 @@ export default function Orcamentos() {
               </button>
               <button
                 onClick={handleCadastrar}
-                disabled={isSubmitting || !selectedClienteId || !nomeEvento || !dataEvento || !convidados || pratosSelecionados.length === 0 || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > e.quantidade; })}
+                disabled={isSubmitting || !nomeEvento || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > e.quantidade; })}
                 className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Gerando...' : (editingOrcamentoId ? 'Atualizar Orçamento' : 'Salvar Proposta')}

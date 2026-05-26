@@ -383,7 +383,7 @@ export default function Pratos() {
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Tipo de Venda*</label>
+                          <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Tipo de Venda</label>
                           <select
                             value={tipoVenda}
                             onChange={e => setTipoVenda(e.target.value as any)}
@@ -396,13 +396,12 @@ export default function Pratos() {
 
                         <div>
                            <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">
-                             {tipoVenda === 'Por Unidade' ? 'Quantidade por Pessoa*' : 'Rendimento (Pessoas)*'}
+                             {tipoVenda === 'Por Unidade' ? 'Quantidade por Pessoa' : 'Rendimento (Pessoas)'}
                            </label>
                            <input
                              type="number"
                              min="1"
                              step="1"
-                             required
                              value={rendimento}
                              onChange={e => setRendimento(Number(e.target.value) || 1)}
                              className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
@@ -414,7 +413,7 @@ export default function Pratos() {
                         <div className="pt-4 border-t border-mesaninas-creme/50 mt-6">
                           <div className="flex justify-between items-center mb-3">
                             <label className="block text-xs font-semibold text-mesaninas-green/70">
-                              Fornecedores e Custos*
+                              Fornecedores e Custos
                             </label>
                             <button
                               type="button"
@@ -433,7 +432,6 @@ export default function Pratos() {
                               {fornecedoresCustos.map((fc, idx) => (
                                 <div key={idx} className="flex gap-2 items-center">
                                   <select
-                                    required
                                     value={fc.fornecedorId}
                                     onChange={(e) => updateFornecedorCusto(idx, 'fornecedorId', e.target.value)}
                                     className="flex-1 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
@@ -446,7 +444,6 @@ export default function Pratos() {
                                   <input
                                     type="text"
                                     inputMode="numeric"
-                                    required
                                     value={fc.custo}
                                     onChange={(e) => updateFornecedorCusto(idx, 'custo', e.target.value)}
                                     className="w-32 px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
@@ -478,7 +475,7 @@ export default function Pratos() {
                     </button>
                     <button
                       type="submit"
-                      disabled={isSubmitting || !nome || fornecedoresCustos.length === 0}
+                      disabled={isSubmitting || !nome}
                       className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50"
                     >
                       {isSubmitting ? 'Salvando...' : (editingPrato ? 'Atualizar Prato' : 'Salvar Prato')}

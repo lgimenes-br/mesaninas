@@ -148,13 +148,8 @@ export default function Usuarios() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim() || !email.trim()) {
-      alert('Nome e E-mail são obrigatórios.');
-      return;
-    }
-    
-    if (!editingUser && !senha.trim()) {
-      alert('A senha é obrigatória para novos usuários.');
+    if (!nome.trim()) {
+      alert('Nome é obrigatório.');
       return;
     }
     
@@ -411,7 +406,6 @@ export default function Usuarios() {
                           <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">E-mail</label>
                           <input 
                             type="email"
-                            required
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
@@ -424,7 +418,6 @@ export default function Usuarios() {
                             <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Senha Temporária</label>
                             <input 
                               type="password"
-                              required
                               value={senha}
                               onChange={e => setSenha(e.target.value)}
                               className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"

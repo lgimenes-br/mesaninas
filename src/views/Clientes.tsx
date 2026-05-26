@@ -46,6 +46,7 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
   const [observacoes, setObservacoes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
+  const [cnpjError, setCnpjError] = useState('');
 
   useEffect(() => {
     if (clienteData) {
@@ -83,6 +84,7 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
     const cleanCnpj = e.target.value.replace(/\D/g, '');
     if ((tipo === 'Corporativo' && cleanCnpj.length === 14) || cleanCnpj.length === 14) {
       setIsSearchingCnpj(true);
+      setCnpjError('');
       try {
         const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
         if (!response.ok) {
@@ -123,7 +125,7 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
         if (data.complemento) setComplemento(data.complemento);
       } catch (err) {
         console.error('Erro ao buscar CNPJ', err);
-        alert('CNPJ não encontrado ou instabilidade na Receita Federal');
+        setCnpjError('CNPJ não encontrado ou inválido. Verifique o número.');
       } finally {
         setIsSearchingCnpj(false);
       }
@@ -151,7 +153,7 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !email || !telefone || !cpfCnpj) return;
+    if (!nome) return;
 
     setIsSubmitting(true);
     try {
@@ -271,25 +273,33 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
 
                 <div className="col-span-1">
                   <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1 flex justify-between items-center">
-                    <span>{tipo === 'Social' ? 'CPF*' : 'CNPJ*'}</span>
+                    <span>{tipo === 'Social' ? 'CPF' : 'CNPJ'}</span>
                     {isSearchingCnpj && <span className="text-[10px] text-mesaninas-yellow font-bold animate-pulse">Buscando...</span>}
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={cpfCnpj}
-                    onChange={e => setCpfCnpj(formatCpfCnpj(e.target.value))}
-                    onBlur={handleCnpjBlur}
-                    className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
-                    placeholder={tipo === 'Social' ? '000.000.000-00' : '00.000.000/0000-00'}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={cpfCnpj}
+                      onChange={e => {
+                        setCpfCnpj(formatCpfCnpj(e.target.value));
+                        setCnpjError('');
+                      }}
+                      onBlur={handleCnpjBlur}
+                      className={`w-full px-3 h-12 lg:h-10 bg-white border ${cnpjError ? 'border-red-500 ring-2 ring-red-500/20' : 'border-mesaninas-creme focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow'} rounded-md text-sm focus:outline-none text-mesaninas-green`}
+                      placeholder={tipo === 'Social' ? '000.000.000-00' : '00.000.000/0000-00'}
+                    />
+                    {cnpjError && (
+                      <p className="absolute -bottom-5 left-0 text-[10px] text-red-500 font-medium">
+                        {cnpjError}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="col-span-1">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Telefone / WhatsApp*</label>
+                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Telefone / WhatsApp</label>
                   <input
                     type="text"
-                    required
                     value={telefone}
                     onChange={e => setTelefone(e.target.value)}
                     className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
@@ -298,10 +308,9 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
                 </div>
 
                 <div className="col-span-1 lg:col-span-1">
-                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Email de Contato*</label>
+                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Email de Contato</label>
                   <input
                     type="email"
-                    required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
@@ -332,21 +341,19 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
                  <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Logradouro (Rua/Av)*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Logradouro (Rua/Av)</label>
                     <input
                       type="text"
-                      required
                       value={logradouro}
                       onChange={e => setLogradouro(e.target.value)}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
                     />
                  </div>
                  <div className="col-span-1 lg:col-span-1">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Número*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Número</label>
                     <input
                       id="numero_input"
                       type="text"
-                      required
                       value={numero}
                       onChange={e => setNumero(e.target.value)}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
@@ -364,10 +371,9 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
                     />
                  </div>
                  <div className="col-span-1 md:col-span-1 lg:col-span-2">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Bairro*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Bairro</label>
                     <input
                       type="text"
-                      required
                       value={bairro}
                       onChange={e => setBairro(e.target.value)}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
@@ -375,20 +381,18 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
                  </div>
                  
                  <div className="col-span-1 md:col-span-1 lg:col-span-3">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Cidade*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Cidade</label>
                     <input
                       type="text"
-                      required
                       value={cidade}
                       onChange={e => setCidade(e.target.value)}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
                     />
                  </div>
                  <div className="col-span-1 md:col-span-1 lg:col-span-1">
-                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">UF*</label>
+                    <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">UF</label>
                     <input
                       type="text"
-                      required
                       value={uf}
                       onChange={e => setUf(e.target.value)}
                       className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green uppercase"
@@ -424,7 +428,7 @@ function ClienteFormModal({ isOpen, onClose, clienteData, onSaveSuccess }: Clien
           <button
             type="submit"
             form="clienteForm"
-            disabled={isSubmitting || !nome || !email || !telefone || !cpfCnpj}
+            disabled={isSubmitting || isSearchingCnpj || !nome}
             className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50"
           >
             {isSubmitting ? 'Salvando...' : 'Salvar Cliente'}
