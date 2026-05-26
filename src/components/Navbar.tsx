@@ -18,6 +18,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
+import MesaninasLogo from './MesaninasLogo';
+
 type ViewType = 'dashboard' | 'clientes' | 'fornecedores' | 'estoque' | 'pratos' | 'orcamentos' | 'financeiro' | 'configuracoes' | 'usuarios';
 
 interface NavbarProps {
@@ -80,12 +82,7 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
           
           {/* LEFT: LOGO */}
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => onNavigate('dashboard')}>
-            <div className="flex items-center justify-center w-8 h-8 font-serif font-bold text-[#00382b] bg-[#e7e873] rounded shadow-sm">
-              M
-            </div>
-            <span className="text-xl font-serif font-bold tracking-tight text-white">
-              Mesaninas
-            </span>
+            <MesaninasLogo className="h-5 sm:h-6 md:h-8 w-auto text-[#e7e873]" />
           </div>
 
           {/* CENTER: DESKTOP NAVIGATION */}

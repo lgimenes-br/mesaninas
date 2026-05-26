@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { Leaf } from 'lucide-react';
+import MesaninasLogo from '../components/MesaninasLogo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -51,12 +51,9 @@ export default function Login() {
   return (
     <div className="flex w-full h-screen items-center justify-center bg-mesaninas-creme bg-grid-pattern text-mesaninas-green p-4">
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-mesaninas-creme max-w-sm w-full flex flex-col items-center">
-        <div className="w-16 h-16 bg-mesaninas-green rounded-full flex items-center justify-center text-mesaninas-yellow shadow-lg shadow-mesaninas-green/20 mb-6 font-bold">
-          <Leaf size={32} />
+        <div className="mb-8 mt-4 flex justify-center w-full">
+          <MesaninasLogo className="h-8 sm:h-10 text-mesaninas-green" />
         </div>
-        <h1 className="text-2xl font-serif font-bold tracking-tight mb-2 text-center text-mesaninas-green">
-          Mesaninas Catering
-        </h1>
         <p className="text-sm text-mesaninas-green/60 mb-8 text-center">
           {isRegisterMode ? 'Crie sua conta de administrador.' : 'Faça login para acessar o sistema.'}
         </p>
