@@ -175,8 +175,15 @@ export default function Usuarios() {
         });
 
         if (!response.ok) {
-          const resData = await response.json();
-          throw new Error(resData.error || 'Erro ao cadastrar o novo usuário.');
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+             const resData = await response.json();
+             throw new Error(resData.error || 'Erro ao cadastrar o novo usuário.');
+          } else {
+             const textError = await response.text();
+             console.error("API response error (non-JSON):", textError);
+             throw new Error('Erro de comunicação com o servidor. A API retornou uma resposta inesperada.');
+          }
         }
       }
       closeModal();
