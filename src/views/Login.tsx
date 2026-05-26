@@ -8,6 +8,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [profileType, setProfileType] = useState('Cliente');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -26,11 +27,11 @@ export default function Login() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        // Criar o documento do usuário com perfil de Admin padrão na fase de testes
         await setDoc(doc(db, 'usuarios', user.uid), {
           nome: name,
           email: user.email,
-          perfil: 'Admin',
+          perfil: profileType,
+          isAdmin: false,
           status: 'Ativo'
         });
       } else {
@@ -66,16 +67,29 @@ export default function Login() {
 
         <form onSubmit={handleAuth} className="w-full flex flex-col gap-4">
           {isRegisterMode && (
-            <div>
-              <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Nome Completo</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 h-12 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
-                placeholder="Ex: Ana Maria"
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Nome Completo</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 h-12 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
+                  placeholder="Ex: Ana Maria"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Desejo me cadastrar como:</label>
+                <select
+                  value={profileType}
+                  onChange={(e) => setProfileType(e.target.value)}
+                  className="w-full px-4 h-12 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow bg-white"
+                >
+                  <option value="Cliente">Cliente</option>
+                  <option value="Fornecedor">Fornecedor</option>
+                </select>
+              </div>
+            </>
           )}
           <div>
             <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">E-mail</label>
@@ -112,7 +126,7 @@ export default function Login() {
           {isRegisterMode ? (
             <p>Já tem uma conta? <button type="button" onClick={() => setIsRegisterMode(false)} className="font-bold underline text-mesaninas-green">Fazer login</button></p>
           ) : (
-            <p>Ainda não tem acesso? <button type="button" onClick={() => setIsRegisterMode(true)} className="font-bold underline text-mesaninas-green">Criar conta como Admin</button></p>
+            <p>Ainda não tem acesso? <button type="button" onClick={() => setIsRegisterMode(true)} className="font-bold underline text-mesaninas-green">Cadastre-se</button></p>
           )}
         </div>
       </div>
