@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { Orcamento, Prato, Cliente } from '../types';
 import { ChevronDown, Check, Pencil, Trash2 } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const formatCurrencyInput = (value: string | number) => {
   if (value === undefined || value === null) return '';
@@ -20,6 +21,7 @@ const parseCurrency = (value: string) => {
 };
 
 export default function Orcamentos() {
+  const { userProfile } = useAuth();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [pratosDB, setPratosDB] = useState<Prato[]>([]);
   const [clientesDB, setClientesDB] = useState<Cliente[]>([]);
@@ -72,6 +74,9 @@ export default function Orcamentos() {
       const dataToUpdate: any = { status: newStatus };
       if (newStatus === 'Aprovado' || newStatus === 'Entregue') {
         dataToUpdate.statusPagamento = 'Aguardando';
+      }
+      if (userProfile?.nome) {
+        dataToUpdate.ultimoEditor = userProfile.nome;
       }
       await updateDoc(orcRef, dataToUpdate);
     } catch (err: any) {
@@ -286,7 +291,8 @@ export default function Orcamentos() {
   const custoAlimentos = pratosSelecionados.reduce((acc, prato) => {
      const rendimento = Number(prato.rendimento) || 1;
      const precoBase = Number(prato.precoBase) || 0;
-     const fatorDeMultiplicacao = convidados / rendimento;
+     const tipoVenda = prato.tipoVenda || 'Por Quilo';
+     const fatorDeMultiplicacao = tipoVenda === 'Por Unidade' ? convidados * rendimento : convidados / rendimento;
      const custoDoItem = fatorDeMultiplicacao * precoBase;
      return acc + custoDoItem;
   }, 0);
@@ -324,6 +330,7 @@ export default function Orcamentos() {
           margemLucro: margem,
           valorVenda: valorVendaSugerido,
           status: status,
+          ultimoEditor: userProfile?.nome || undefined,
         };
 
         if (status === 'Aprovado' || status === 'Entregue') {
@@ -456,11 +463,10 @@ export default function Orcamentos() {
       {/* Main Table Card */}
       <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden flex flex-col flex-1">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-mesaninas-creme/50 bg-mesaninas-creme/10 gap-4 shrink-0">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <h3 className="font-serif font-bold text-lg text-mesaninas-green">Nossos Orçamentos</h3>
+          <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
             
             {/* View Mode Switcher */}
-            <div className="flex bg-mesaninas-creme/60 p-1 rounded-lg border border-mesaninas-creme max-w-max">
+            <div className="flex bg-mesaninas-creme/60 p-1 rounded-lg border border-mesaninas-creme max-w-max mr-auto">
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
@@ -507,17 +513,18 @@ export default function Orcamentos() {
                      <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Valor Venda</th>
                      <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Status</th>
                      <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Pagamento</th>
+                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center w-24">Auditoria</th>
                      <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Ações</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-mesaninas-creme/50">
                    {loading ? (
                      <tr>
-                       <td colSpan={7} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Carregando dados...</td>
+                       <td colSpan={8} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Carregando dados...</td>
                      </tr>
                    ) : orcamentos.length === 0 ? (
                      <tr>
-                       <td colSpan={7} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum orçamento gerado.</td>
+                       <td colSpan={8} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum orçamento gerado.</td>
                      </tr>
                    ) : (
                      orcamentos.map((orc) => (
@@ -544,6 +551,9 @@ export default function Orcamentos() {
                          </td>
                          <td className="px-6 py-4 text-center">
                             {getPaymentBadge(orc.status, orc.statusPagamento)}
+                         </td>
+                         <td className="px-6 py-4 text-center text-xs text-mesaninas-green/50">
+                            {orc.ultimoEditor ? `por ${orc.ultimoEditor.split(' ')[0]}` : '-'}
                          </td>
                          <td className="px-6 py-4 text-right">
                            <div className="flex justify-end gap-1.5">
@@ -694,7 +704,10 @@ export default function Orcamentos() {
                                   >
                                      {/* Card Header Title */}
                                      <div className="flex justify-between items-start gap-1">
-                                        <h4 className="font-bold text-mesaninas-green text-xs line-clamp-2 leading-snug group-hover:text-mesaninas-green/80 flex-1">{orc.clienteNome}</h4>
+                                        <div className="flex flex-col leading-snug flex-1">
+                                           <h4 className="font-bold text-mesaninas-green text-xs line-clamp-2 group-hover:text-mesaninas-green/80">{orc.nomeEvento || 'Serviço de Buffet'}</h4>
+                                           <span className="font-semibold text-[11px] text-mesaninas-green/75 truncate mt-0.5">{orc.clienteNome}</span>
+                                        </div>
                                         <div className="shrink-0 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all">
                                            <button 
                                              onClick={() => openEditModal(orc)}
@@ -716,22 +729,34 @@ export default function Orcamentos() {
                                      </div>
                                      
                                      {/* Event details block */}
-                                     <div className="text-mesaninas-green/75 font-sans leading-relaxed">
-                                        <div className="font-semibold text-[11px] truncate">{orc.nomeEvento || 'Serviço de Buffet'}</div>
+                                     <div className="text-mesaninas-green/75 font-sans leading-relaxed flex justify-between items-center">
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] opacity-75 mt-0.5">
                                            <span>📅 {formatDate(orc.dataEvento)}</span>
                                            <span>• 👥 {orc.numConvidados} pax</span>
                                         </div>
+                                        {orc.statusPagamento?.toLowerCase() === 'pago' && (
+                                           <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded-md shrink-0 uppercase">Pago</span>
+                                        )}
                                      </div>
                                      
                                      {/* Card footer: Pricing / Switch Status */}
-                                     <div className="pt-2.5 border-t border-mesaninas-creme/65 flex justify-between items-center mt-0.5">
-                                        <span className="font-extrabold text-[#748e72] text-[13px]">
-                                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(orc.valorVenda)}
-                                        </span>
+                                     <div className="pt-2.5 border-t border-mesaninas-creme/65 flex justify-between items-end mt-0.5">
+                                        <div className="flex flex-col flex-1 pr-2">
+                                           {orc.ultimoEditor && (
+                                              <span className="text-[9px] text-mesaninas-green/50 leading-tight">
+                                                 Última edição:<br />
+                                                 <span className="font-semibold">{orc.ultimoEditor}</span>
+                                              </span>
+                                           )}
+                                        </div>
                                         
-                                        {/* Status Switcher touch compatible selector screen */}
-                                        <select
+                                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                           <span className="font-extrabold text-[#748e72] text-[13px]">
+                                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(orc.valorVenda)}
+                                           </span>
+                                           
+                                           {/* Status Switcher touch compatible selector screen */}
+                                           <select
                                           value={
                                             (orc.status === 'Rascunho' ? 'Em Aberto' : 
                                              orc.status === 'Entregue' ? 'Aprovado' : 
@@ -745,6 +770,7 @@ export default function Orcamentos() {
                                            <option value="Aprovado">Aprovado</option>
                                            <option value="Recusado">Concluído</option>
                                         </select>
+                                        </div>
                                      </div>
                                   </div>
                                ))

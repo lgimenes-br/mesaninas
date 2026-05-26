@@ -19,6 +19,8 @@ export default function Header({ activeView }: HeaderProps) {
     usuarios: 'Usuários'
   };
 
+  if (activeView === 'dashboard') return null;
+
   return (
     <header className="flex items-start sm:items-center justify-between px-4 lg:px-6 pt-6 pb-2 bg-transparent shrink-0">
       <div className="flex flex-col gap-1">

@@ -49,6 +49,7 @@ export interface ItemEstoque {
   id: string;
   nome: string;
   quantidade: number;
+  estoqueMinimo?: number;
   unidadeMedida: string;
   fornecedoresRelacionados?: string[];
 }
@@ -82,5 +83,6 @@ export interface Orcamento {
   status: 'Rascunho' | 'Em Aberto' | 'Enviado' | 'Em Negociação' | 'Aprovado' | 'Entregue' | 'Recusado';
   statusPagamento?: 'Aguardando' | 'Pago';
   createdAt?: string;
+  ultimoEditor?: string;
 }
 

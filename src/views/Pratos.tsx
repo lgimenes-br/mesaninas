@@ -332,7 +332,9 @@ export default function Pratos() {
                      />
                   </div>
                   <div>
-                     <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Rendimento (Pessoas)*</label>
+                     <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">
+                       {tipoVenda === 'Por Unidade' ? 'Quantidade por Pessoa*' : 'Rendimento (Pessoas)*'}
+                     </label>
                      <input
                        type="number"
                        min="1"
@@ -341,7 +343,8 @@ export default function Pratos() {
                        value={rendimento}
                        onChange={e => setRendimento(Number(e.target.value) || 1)}
                        className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
-                       placeholder="Ex: 5"
+                       placeholder={tipoVenda === 'Por Unidade' ? 'Ex: 4 (Significa que 1 pessoa consome 4 unidades)' : 'Ex: 10 (Significa que 1 unidade/kg serve 10 pessoas)'}
+                       title={tipoVenda === 'Por Unidade' ? 'Ex: 4 (Significa que 1 pessoa consome 4 unidades)' : 'Ex: 10 (Significa que 1 unidade/kg serve 10 pessoas)'}
                      />
                   </div>
                 </div>
