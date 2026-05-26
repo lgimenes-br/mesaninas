@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
 import { Usuario } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldCheck, Pencil, UserCheck, X, Camera } from 'lucide-react';
+import { ShieldCheck, Pencil, UserCheck, X, Camera, Trash2 } from 'lucide-react';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
 export default function Usuarios() {
   const { userProfile } = useAuth();
@@ -15,17 +16,36 @@ export default function Usuarios() {
   
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [perfil, setPerfil] = useState<'Admin' | 'Fornecedor' | 'Cliente'>('Cliente');
   const [status, setStatus] = useState<'Ativo' | 'Inativo'>('Ativo');
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const requestDelete = (uid: string) => {
+    setDeleteConfirmId(uid);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      await deleteDoc(doc(db, 'usuarios', deleteConfirmId));
+    } catch (err: any) {
+      console.error(err);
+      alert('Erro ao excluir usuário.');
+    } finally {
+      setDeleteConfirmId(null);
+    }
+  };
 
   const openNewModal = () => {
     setEditingUser(null);
     setNome('');
     setEmail('');
+    setSenha('');
     setPerfil('Cliente');
     setStatus('Ativo');
     setFotoPerfil(null);
@@ -65,6 +85,7 @@ export default function Usuarios() {
     setEditingUser(null);
     setNome('');
     setEmail('');
+    setSenha('');
     setFotoPerfil(null);
   };
 
@@ -114,6 +135,11 @@ export default function Usuarios() {
       return;
     }
     
+    if (!editingUser && !senha.trim()) {
+      alert('A senha é obrigatória para novos usuários.');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       if (editingUser) {
@@ -125,19 +151,38 @@ export default function Usuarios() {
           ...(fotoPerfil !== undefined && { fotoPerfil })
         });
       } else {
-        const newDocRef = doc(collection(db, 'usuarios'));
-        await setDoc(newDocRef, {
-          nome,
-          email,
-          perfil,
-          status,
-          fotoPerfil: fotoPerfil || null
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) {
+          alert('Não foi possível autenticar a sua sessão para criar um usuário.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const response = await fetch('/api/usuarios', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({
+            nome,
+            email,
+            senha,
+            perfil,
+            status,
+            fotoPerfil: fotoPerfil || null
+          })
         });
+
+        if (!response.ok) {
+          const resData = await response.json();
+          throw new Error(resData.error || 'Erro ao cadastrar o novo usuário.');
+        }
       }
       closeModal();
     } catch (err: any) {
       console.error(err);
-      alert('Erro ao salvar usuário.');
+      alert(err.message || 'Erro ao salvar usuário.');
     } finally {
       setIsSubmitting(false);
     }
@@ -207,13 +252,22 @@ export default function Usuarios() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
-                      onClick={() => handleEditClick(user)}
-                      className="p-2 text-mesaninas-green/50 hover:text-mesaninas-yellow hover:bg-white rounded-md transition-all shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100"
-                      title="Editar Permissões"
-                    >
-                      <Pencil size={16} />
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => handleEditClick(user)}
+                        className="text-mesaninas-green/60 hover:text-[#e7e873] hover:bg-white rounded-md transition-all p-1.5 shadow-sm"
+                        title="Editar"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => requestDelete(user.uid)}
+                        className="text-mesaninas-green/60 hover:text-red-500 hover:bg-white rounded-md transition-all p-1.5 shadow-sm"
+                        title="Apagar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -313,6 +367,21 @@ export default function Usuarios() {
                 />
               </div>
 
+              {!editingUser && (
+                <div>
+                  <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Senha Temporária</label>
+                  <input 
+                    type="password"
+                    required
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 text-mesaninas-green bg-white"
+                    placeholder="Mínimo de 6 caracteres"
+                    minLength={6}
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Perfil do Usuário</label>
                 <select 
@@ -360,6 +429,12 @@ export default function Usuarios() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteConfirmId}
+        onCancel={() => setDeleteConfirmId(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

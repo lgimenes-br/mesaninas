@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Mesaninas",
+  "description": "Sistema de CRM, Orçamentos, Eventos e Gestão de Estoque para Buffet Mesaninas.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

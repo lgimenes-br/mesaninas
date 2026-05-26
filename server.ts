@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { criarOrcamento } from './server/api/criarOrcamento';
+import { criarUsuario } from './server/api/criarUsuario';
 
 const PORT = 3000;
 
@@ -17,8 +18,9 @@ async function startServer() {
     res.json({ status: 'ok', message: 'Mesaninas API is running' });
   });
 
-  // Main Endpoint (Next.js Server Action alternative for Express)
+  // Main Endpoints (Next.js Server Action alternative for Express)
   app.post('/api/orcamentos', criarOrcamento);
+  app.post('/api/usuarios', criarUsuario);
 
   // === VITE / CLIENT HANDLING ===
   if (process.env.NODE_ENV !== 'production') {
