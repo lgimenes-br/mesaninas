@@ -29,7 +29,7 @@ export default function Orcamentos() {
   const [error, setError] = useState<string | null>(null);
 
   // Sales Funnel CRM and Print states
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [printOrcamento, setPrintOrcamento] = useState<Orcamento | null>(null);
   const [configGerais, setConfigGerais] = useState<any>({
     nomeFantasia: 'Mesaninas Buffet & Eventos',
