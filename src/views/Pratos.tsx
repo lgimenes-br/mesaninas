@@ -197,12 +197,12 @@ export default function Pratos() {
       {/* Main Table Card */}
       <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden flex flex-col flex-1">
         <div className="flex items-center justify-between px-6 py-4 border-b border-mesaninas-creme/50 bg-mesaninas-creme/10">
-          <h3 className="font-serif font-bold text-lg text-mesaninas-green">Nossos Pratos & Itens</h3>
+          <h3 className="font-serif font-bold text-lg text-mesaninas-green">Cardápio</h3>
           <button
             onClick={openNewModal}
             className="px-4 py-2 h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            <span className="text-lg leading-none">+</span> <span>Novo Prato</span>
+            <span className="text-lg leading-none">+</span> <span>Novo Item</span>
           </button>
         </div>
 
@@ -211,7 +211,7 @@ export default function Pratos() {
           <thead className="bg-mesaninas-creme/50 sticky top-0 border-b border-mesaninas-creme/50 z-10 shadow-sm">
             <tr>
               <th className="w-16 px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Foto</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Prato / Item</th>
+              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Item</th>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Tipo de Venda</th>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Fornecedores</th>
               <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Ações</th>
@@ -224,7 +224,7 @@ export default function Pratos() {
               </tr>
             ) : pratos.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum prato cadastrado.</td>
+                <td colSpan={5} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum item cadastrado.</td>
               </tr>
             ) : (
               pratos.map((prato) => (
@@ -282,7 +282,7 @@ export default function Pratos() {
             {loading ? (
               <div className="text-center text-mesaninas-green/50 text-sm py-8">Carregando dados...</div>
             ) : pratos.length === 0 ? (
-              <div className="text-center text-mesaninas-green/50 text-sm py-8">Nenhum prato encontrado.</div>
+              <div className="text-center text-mesaninas-green/50 text-sm py-8">Nenhum item encontrado.</div>
             ) : (
               pratos.map((prato) => (
                 <div key={prato.id} className="bg-white border border-mesaninas-creme/70 rounded-xl p-4 shadow-sm flex flex-col gap-2">
@@ -355,7 +355,7 @@ export default function Pratos() {
                   )}
                   {/* Overlay URL Input */}
                   <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                      <label className="block text-xs font-semibold text-white/90 mb-1 drop-shadow-md">URL da Imagem do Prato</label>
+                      <label className="block text-xs font-semibold text-white/90 mb-1 drop-shadow-md">URL da Imagem do Item</label>
                       <input
                         type="url"
                         value={imagemUrl}
@@ -371,10 +371,9 @@ export default function Pratos() {
                   <div className="flex-1 space-y-6 max-w-3xl">
                     <div className="space-y-4">
                         <div>
-                          <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Nome do Prato / Item*</label>
+                          <label className="block text-xs font-semibold text-mesaninas-green/70 mb-1">Nome do Item*</label>
                           <input
                             type="text"
-                            required
                             value={nome}
                             onChange={e => setNome(e.target.value)}
                             className="w-full px-3 h-12 lg:h-10 border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow"
@@ -478,7 +477,7 @@ export default function Pratos() {
                       disabled={isSubmitting || !nome}
                       className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50"
                     >
-                      {isSubmitting ? 'Salvando...' : (editingPrato ? 'Atualizar Prato' : 'Salvar Prato')}
+                      {isSubmitting ? 'Salvando...' : (editingPrato ? 'Atualizar Item' : 'Salvar Item')}
                     </button>
                   </div>
                 </div>
