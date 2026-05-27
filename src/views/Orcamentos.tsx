@@ -87,15 +87,17 @@ export default function Orcamentos() {
       const orcRef = doc(db, 'orcamentos', orcamentoId);
 
       const dataToUpdate: any = { status: newStatus };
-      if (newStatus === 'Aprovado' || newStatus === 'Entregue') {
-        dataToUpdate.statusPagamento = 'Aguardando';
+      if (newStatus === 'Aprovado' || newStatus === 'Entregue' || newStatus === 'Recusado') {
+        if (!orc.statusPagamento) {
+          dataToUpdate.statusPagamento = 'Aguardando';
+        }
       }
       if (userProfile?.nome) {
         dataToUpdate.ultimoEditor = userProfile.nome;
       }
 
       // Handle stock
-      const willBeBaixado = ['Aprovado', 'Entregue'].includes(newStatus);
+      const willBeBaixado = ['Aprovado', 'Entregue', 'Recusado'].includes(newStatus);
       const isCurrentlyBaixado = orc.estoqueBaixado || false;
       const orcMateriais = orc.materiaisEstoque || [];
 
@@ -170,7 +172,7 @@ export default function Orcamentos() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === 'Aprovado' || status === 'Entregue') {
+    if (status === 'Aprovado' || status === 'Entregue' || status === 'Recusado') {
       if (!statusPagamento) setStatusPagamento('Aguardando');
     }
   }, [status, statusPagamento]);
@@ -326,6 +328,7 @@ export default function Orcamentos() {
     }
 
     setMargemLucro(orcamento.margemLucro !== undefined ? orcamento.margemLucro : 20);
+    setAliquotaNF(orcamento.aliquotaNF !== undefined ? orcamento.aliquotaNF : Number(configGerais?.aliquotaNF || 0));
     
     // Map legacy status if needed to exact kanban column IDs
     const s = orcamento.status as string;
@@ -415,10 +418,13 @@ export default function Orcamentos() {
   const margem = Number(margemLucro) || 0;
 
   const custoOperacionalTotal = custoAlimentos + totalCustosExtras;
-  const subtotalComMargem = custoOperacionalTotal * (1 + margem / 100);
-  const valorImposto = subtotalComMargem * ((aliquotaNF || 0) / 100);
-  const valorVendaSugerido = subtotalComMargem + valorImposto;
-  const lucroEstimado = subtotalComMargem - custoOperacionalTotal;
+
+  const somaPercentuais = (margem / 100) + ((aliquotaNF || 0) / 100);
+  const fatorDivisor = somaPercentuais < 1 ? (1 - somaPercentuais) : 1;
+  
+  const valorVendaSugerido = custoOperacionalTotal / fatorDivisor;
+  const valorImposto = valorVendaSugerido * ((aliquotaNF || 0) / 100);
+  const lucroEstimado = valorVendaSugerido * (margem / 100);
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -442,6 +448,7 @@ export default function Orcamentos() {
           custoAlimentos,
           custoTotal: custoOperacionalTotal,
           margemLucro: margem,
+          aliquotaNF,
           valorVenda: valorVendaSugerido,
           status: status,
           imagemUrl: imagemUrl,
@@ -449,7 +456,7 @@ export default function Orcamentos() {
           ultimoEditor: userProfile?.nome || undefined,
         };
 
-        let willBeBaixado = status === 'Aprovado' || status === 'Entregue';
+        let willBeBaixado = status === 'Aprovado' || status === 'Entregue' || status === 'Recusado';
         orcamentoData.estoqueBaixado = willBeBaixado;
 
         if (willBeBaixado) {
@@ -534,6 +541,7 @@ export default function Orcamentos() {
      setPratosSelecionados([]);
      setCustosExtras([]);
      setMargemLucro(margemPadrao);
+     setAliquotaNF(Number(configGerais?.aliquotaNF || 0));
      setStatus('Em Aberto');
      setStatusPagamento('Aguardando');
      setImagemUrl('');
@@ -620,7 +628,7 @@ export default function Orcamentos() {
 
   const getPaymentBadge = (statusProjeto?: string, statusPagamento?: string) => {
     const s = statusProjeto?.toLowerCase();
-    if (s !== 'aprovado' && s !== 'entregue') {
+    if (s !== 'aprovado' && s !== 'entregue' && s !== 'recusado') {
       return <span className="text-mesaninas-green/40 font-bold">-</span>;
     }
     if (statusPagamento?.toLowerCase() === 'pago') {
@@ -879,32 +887,33 @@ export default function Orcamentos() {
                                     key={orc.id}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, orc.id)}
-                                    className="bg-white border border-mesaninas-creme/80 hover:border-mesaninas-green/50 hover:shadow-md transition-all p-3.5 rounded-xl text-xs flex flex-col gap-2.5 cursor-grab active:cursor-grabbing group shadow-sm"
+                                    className="w-full bg-white border border-mesaninas-creme/80 hover:border-mesaninas-green/50 hover:shadow-md transition-all rounded-xl text-xs flex flex-col cursor-grab active:cursor-grabbing group shadow-sm overflow-hidden"
                                   >
-                                     {/* Card Header Title */}
-                                     <div className="flex justify-between items-start gap-1">
-                                        <div className="flex flex-col leading-snug flex-1">
-                                           <h4 className="font-bold text-mesaninas-green text-xs line-clamp-2 group-hover:text-mesaninas-green/80">{orc.nomeEvento || 'Serviço de Buffet'}</h4>
-                                           <span className="font-semibold text-[11px] text-mesaninas-green/75 truncate mt-0.5">{orc.clienteNome}</span>
+                                     {/* Novo Cabeçalho do Card (Top Bar) */}
+                                     <div className="flex items-center justify-between px-4 py-3 bg-mesaninas-green/10 border-b border-mesaninas-green/20">
+                                        <div className="flex-1 truncate overflow-hidden pr-2">
+                                           <h4 className="font-bold text-mesaninas-green text-xs truncate" title={orc.nomeEvento || 'Serviço de Buffet'}>
+                                              {orc.nomeEvento || 'Serviço de Buffet'}
+                                           </h4>
                                         </div>
-                                        <div className="shrink-0 flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-all">
+                                        <div className="flex gap-3 shrink-0 opacity-60 group-hover:opacity-100 transition-all items-center">
                                            <button 
                                              onClick={() => openEditModal(orc)}
-                                             className="p-1 hover:bg-mesaninas-creme/50 rounded-md text-mesaninas-green/75 hover:text-mesaninas-yellow"
+                                             className="hover:text-mesaninas-yellow transition-colors"
                                              title="Editar"
                                            >
                                               <Pencil className="w-3.5 h-3.5" />
                                            </button>
                                            <button 
                                              onClick={() => requestDelete(orc.id)}
-                                             className="p-1 hover:bg-red-50 rounded-md text-mesaninas-green/75 hover:text-red-500"
+                                             className="hover:text-red-500 transition-colors"
                                              title="Excluir"
                                            >
                                               <Trash2 className="w-3.5 h-3.5" />
                                            </button>
                                            <button 
                                              onClick={() => setPrintOrcamento(orc)}
-                                             className="p-1 hover:bg-mesaninas-creme/50 rounded-md text-mesaninas-green/75 hover:text-emerald-600"
+                                             className="hover:text-emerald-600 transition-colors"
                                              title="Gerar Proposta"
                                            >
                                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -914,48 +923,51 @@ export default function Orcamentos() {
                                         </div>
                                      </div>
                                      
-                                     {/* Event details block */}
-                                     <div className="text-mesaninas-green/75 font-sans leading-relaxed flex justify-between items-center">
-                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] opacity-75 mt-0.5">
-                                           <span>📅 {formatDate(orc.dataEvento)}</span>
-                                           <span>• 👥 {orc.numConvidados} pessoas</span>
-                                        </div>
-                                        {orc.statusPagamento?.toLowerCase() === 'pago' && (
-                                           <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded-md shrink-0 uppercase">Pago</span>
-                                        )}
-                                     </div>
-                                     
-                                     {/* Card footer: Pricing / Switch Status */}
-                                     <div className="pt-2.5 border-t border-mesaninas-creme/65 flex justify-between items-end mt-0.5">
-                                        <div className="flex flex-col flex-1 pr-2">
-                                           {orc.ultimoEditor && (
-                                              <span className="text-[9px] text-mesaninas-green/50 leading-tight">
-                                                 Última edição:<br />
-                                                 <span className="font-semibold">{orc.ultimoEditor}</span>
-                                              </span>
+                                     {/* Corpo do Card (Conteúdo Branco) */}
+                                     <div className="p-4 flex flex-col gap-2 bg-white">
+                                        <div className="flex justify-between items-start">
+                                           <span className="font-semibold text-xs text-mesaninas-green/80 flex-1 truncate pr-2" title={orc.clienteNome}>{orc.clienteNome}</span>
+                                           {orc.statusPagamento?.toLowerCase() === 'pago' && (
+                                              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded-md shrink-0 uppercase ml-auto">Pago</span>
                                            )}
                                         </div>
                                         
-                                        <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                           <span className="font-extrabold text-[#748e72] text-[13px]">
-                                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(orc.valorVenda)}
-                                           </span>
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-mesaninas-green/70">
+                                           <span className="flex items-center gap-1">📅 {formatDate(orc.dataEvento)}</span>
+                                           <span className="flex items-center gap-1">👥 {orc.numConvidados} pessoas</span>
+                                        </div>
+
+                                        <div className="flex justify-between items-end mt-2 pt-2 border-t border-mesaninas-creme/65">
+                                           <div className="flex flex-col flex-1 pr-2">
+                                              {orc.ultimoEditor && (
+                                                 <span className="text-[9px] text-mesaninas-green/50 leading-tight">
+                                                    Última edição:<br />
+                                                    <span className="font-semibold truncate block w-full">{orc.ultimoEditor}</span>
+                                                 </span>
+                                              )}
+                                           </div>
                                            
-                                           {/* Status Switcher touch compatible selector screen */}
-                                           <select
-                                          value={
-                                            (orc.status === 'Rascunho' ? 'Em Aberto' : 
-                                             orc.status === 'Entregue' ? 'Aprovado' : 
-                                             orc.status) || 'Em Aberto'
-                                          }
-                                          onChange={(e) => handleUpdateStatus(orc.id, e.target.value)}
-                                          className="px-2 py-0.5 border border-mesaninas-creme/80 rounded bg-mesaninas-creme/20 text-[10px] text-mesaninas-green font-bold focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow hover:bg-white cursor-pointer"
-                                        >
-                                           <option value="Em Aberto">Rascunho</option>
-                                           <option value="Enviado">Orçamento Enviado</option>
-                                           <option value="Aprovado">Aprovado</option>
-                                           <option value="Recusado">Concluído</option>
-                                        </select>
+                                           <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                              <span className="font-extrabold text-[#748e72] text-[14px]">
+                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(orc.valorVenda)}
+                                              </span>
+                                              
+                                              {/* Status Switcher */}
+                                              <select
+                                                 value={
+                                                   (orc.status === 'Rascunho' ? 'Em Aberto' : 
+                                                    orc.status === 'Entregue' ? 'Aprovado' : 
+                                                    orc.status) || 'Em Aberto'
+                                                 }
+                                                 onChange={(e) => handleUpdateStatus(orc.id, e.target.value)}
+                                                 className="px-2 py-0.5 border border-mesaninas-creme/80 rounded bg-mesaninas-creme/20 text-[10px] text-mesaninas-green font-bold focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow hover:bg-white cursor-pointer"
+                                              >
+                                                 <option value="Em Aberto">Rascunho</option>
+                                                 <option value="Enviado">Orçamento Enviado</option>
+                                                 <option value="Aprovado">Aprovado</option>
+                                                 <option value="Recusado">Concluído</option>
+                                              </select>
+                                           </div>
                                         </div>
                                      </div>
                                   </div>
@@ -1101,7 +1113,7 @@ export default function Orcamentos() {
                           <option value="Recusado">Concluído</option>
                         </select>
                      </div>
-                     {(status === 'Aprovado' || status === 'Entregue') && (
+                     {(status === 'Aprovado' || status === 'Entregue' || status === 'Recusado') && (
                         <div className="col-span-1 lg:col-span-2">
                            <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Status de Pagamento</label>
                            <div className="flex gap-4 mt-2 h-10 items-center">

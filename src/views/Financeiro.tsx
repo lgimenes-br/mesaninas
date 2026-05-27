@@ -50,14 +50,29 @@ export default function Financeiro() {
     'Outros'
   ];
 
+  const [configGerais, setConfigGerais] = useState<any>(null);
+
   useEffect(() => {
     setIsLoading(true);
     let loadedOrc = false;
     let loadedTrans = false;
+    let loadedConfig = false;
 
     const checkLoaded = () => {
-      if (loadedOrc && loadedTrans) setIsLoading(false);
+      if (loadedOrc && loadedTrans && loadedConfig) setIsLoading(false);
     };
+
+    const unsubConfig = onSnapshot(doc(db, 'configuracoes', 'gerais'), (docSnap) => {
+      if (docSnap.exists()) {
+        setConfigGerais(docSnap.data());
+      }
+      loadedConfig = true;
+      checkLoaded();
+    }, (error) => {
+      console.error('Erro ao carregar configurações', error);
+      loadedConfig = true;
+      checkLoaded();
+    });
 
     const unsubOrc = onSnapshot(collection(db, 'orcamentos'), (snapshot) => {
       const orcs: Orcamento[] = [];
@@ -94,25 +109,90 @@ export default function Financeiro() {
       checkLoaded();
     });
 
-    return () => { unsubOrc(); unsubTrans(); };
+    return () => { unsubOrc(); unsubTrans(); unsubConfig(); };
   }, []);
 
-  const allTransacoes = useMemo(() => {
-    const list: Transacao[] = [...transacoesManuais];
-
-    // Integrar orçamentos como receitas
+  const baseTransacoes = useMemo(() => {
+    const list: Transacao[] = [];
     orcamentos.forEach(orc => {
+       const dataTransacao = orc.dataEvento || (orc.createdAt ? new Date(orc.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+       const statusTransacao = orc.statusPagamento === 'Pago' ? 'Pago' : 'Pendente';
+       const eventoNome = `Evento: ${orc.clienteNome || ''} ${orc.nomeEvento || ''}`.trim();
+
+       // 1. Receita (Valor de Venda)
        list.push({
          id: `orc_${orc.id}`,
-         data: orc.dataEvento || (orc.createdAt ? new Date(orc.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-         descricao: `Evento: ${orc.clienteNome || ''} ${orc.nomeEvento || ''}`.trim(),
+         data: dataTransacao,
+         descricao: eventoNome,
          categoria: 'Evento',
          tipo: 'Receita',
          valor: orc.valorVenda || 0,
-         status: orc.statusPagamento === 'Pago' ? 'Pago' : 'Pendente',
+         status: statusTransacao,
          createdAt: orc.createdAt
-      });
+       });
+
+       // 2. Despesa - Custo Alimentos / Insumos
+       if (orc.custoAlimentos && orc.custoAlimentos > 0) {
+          list.push({
+             id: `orc_desp_alim_${orc.id}`,
+             data: dataTransacao,
+             descricao: `Insumos: ${eventoNome}`,
+             categoria: 'Fornecedor',
+             tipo: 'Despesa',
+             valor: orc.custoAlimentos,
+             status: statusTransacao,
+             createdAt: orc.createdAt
+          });
+       }
+
+       // 3. Despesa - Custos Extras
+       if (orc.custosExtras && orc.custosExtras.length > 0) {
+          orc.custosExtras.forEach((extra, idx) => {
+             if (Number(extra.valor) > 0) {
+                list.push({
+                   id: `orc_desp_ext_${orc.id}_${idx}`,
+                   data: dataTransacao,
+                   descricao: `Custos Op. (${extra.descricao || 'Geral'}): ${eventoNome}`,
+                   categoria: extra.descricao || 'Outros',
+                   tipo: 'Despesa',
+                   valor: Number(extra.valor),
+                   status: statusTransacao,
+                   createdAt: orc.createdAt
+                });
+             }
+          });
+       }
+
+       // 4. Despesa - Impostos
+       const currentAliquota = orc.aliquotaNF !== undefined ? orc.aliquotaNF : Number(configGerais?.aliquotaNF || 0);
+       if (currentAliquota > 0) {
+          const custoTotal = (orc.custoAlimentos || 0) + (orc.custosExtras?.reduce((sum, e) => sum + Number(e.valor || 0), 0) || 0);
+          const margem = orc.margemLucro !== undefined ? orc.margemLucro : Number(configGerais?.margemLucro || 20);
+          
+          const somaPercentuais = (margem / 100) + (currentAliquota / 100);
+          const fatorDivisor = somaPercentuais < 1 ? (1 - somaPercentuais) : 1;
+          const valorVendaSugerido = custoTotal / fatorDivisor;
+          const valorImposto = valorVendaSugerido * (currentAliquota / 100);
+
+          if (valorImposto > 0) {
+             list.push({
+                id: `orc_imposto_${orc.id}`,
+                data: dataTransacao,
+                descricao: `Impostos NF (${currentAliquota}%): ${eventoNome}`,
+                categoria: 'Impostos',
+                tipo: 'Despesa',
+                valor: valorImposto,
+                status: statusTransacao,
+                createdAt: orc.createdAt
+             });
+          }
+       }
     });
+    return [...transacoesManuais, ...list];
+  }, [orcamentos, transacoesManuais, configGerais]);
+
+  const allTransacoes = useMemo(() => {
+    const list = baseTransacoes;
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -168,19 +248,7 @@ export default function Financeiro() {
       Saídas: 0,
     }));
 
-    const listForYear: Transacao[] = [...transacoesManuais];
-    orcamentos.forEach(orc => {
-       listForYear.push({
-         id: `orc_${orc.id}`,
-         data: orc.dataEvento || (orc.createdAt ? new Date(orc.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-         descricao: `Evento: ${orc.clienteNome || ''} ${orc.nomeEvento || ''}`.trim(),
-         categoria: 'Evento',
-         tipo: 'Receita',
-         valor: orc.valorVenda || 0,
-         status: orc.statusPagamento === 'Pago' ? 'Pago' : 'Pendente',
-         createdAt: orc.createdAt
-       });
-    });
+    const listForYear: Transacao[] = baseTransacoes;
 
     const targetYear = selectedPeriod === 'year' ? new Date().getFullYear() : selectedYear;
 
@@ -199,7 +267,7 @@ export default function Financeiro() {
     });
 
     return data;
-  }, [orcamentos, transacoesManuais, selectedYear, selectedPeriod]);
+  }, [baseTransacoes, selectedYear, selectedPeriod]);
 
   // Gráfico de Rosca: Custos Operacionais
   const donutChartData = useMemo(() => {

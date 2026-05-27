@@ -98,6 +98,7 @@ export interface Orcamento {
   custoLogistica?: number; // legacy
   custoTotal: number;
   margemLucro: number;
+  aliquotaNF?: number;
   valorVenda: number;
   imagemUrl?: string;
   materiaisEstoque?: { materialId: string; nome: string; quantidade: number }[];

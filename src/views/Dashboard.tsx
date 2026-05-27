@@ -80,7 +80,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
 
   const eventosConfirmados = orcamentos.filter(o => {
     const s = o.status?.toLowerCase();
-    return s === 'aprovado' || s === 'entregue' || s === 'concluido';
+    return s === 'aprovado' || s === 'entregue' || s === 'concluido' || s === 'recusado';
   });
 
   const receitaConfirmada = eventosConfirmados.reduce((acc, o) => acc + (Number(o.valorVenda) || 0), 0);
@@ -92,7 +92,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
 
   // Próximos Eventos
   const proximosEventos = orcamentos
-    .filter(o => o.status?.toLowerCase() === 'enviado' || o.status?.toLowerCase() === 'aprovado')
+    .filter(o => o.status?.toLowerCase() === 'enviado' || o.status?.toLowerCase() === 'aprovado' || o.status?.toLowerCase() === 'recusado')
     .sort((a, b) => {
        if (!a.dataEvento) return 1;
        if (!b.dataEvento) return -1;
@@ -227,7 +227,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
         counts['Enviado']++;
       } else if (s === 'em negociação' || s === 'em aberto' || s === 'pendente') {
         counts['Em Negociação']++;
-      } else if (s === 'aprovado' || s === 'entregue' || s === 'concluido') {
+      } else if (s === 'aprovado' || s === 'entregue' || s === 'concluido' || s === 'recusado') {
         counts['Aprovado']++;
       }
     });
