@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Orcamento, Prato, Cliente, CustoOperacionalCategoria, ItemEstoque } from '../types';
-import { ChevronDown, Check, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, Check, Pencil, Trash2, Search } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -42,6 +42,7 @@ export default function Orcamentos() {
 
   // Sales Funnel CRM and Print states
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
+  const [searchTerm, setSearchTerm] = useState('');
   const [printOrcamento, setPrintOrcamento] = useState<Orcamento | null>(null);
   const [configGerais, setConfigGerais] = useState<any>({
     nomeFantasia: 'Mesaninas Buffet & Eventos',
@@ -97,7 +98,7 @@ export default function Orcamentos() {
       }
 
       // Handle stock
-      const willBeBaixado = ['Aprovado', 'Entregue', 'Recusado'].includes(newStatus);
+      const willBeBaixado = ['Aprovado', 'Entregue'].includes(newStatus);
       const isCurrentlyBaixado = orc.estoqueBaixado || false;
       const orcMateriais = orc.materiaisEstoque || [];
 
@@ -107,7 +108,9 @@ export default function Orcamentos() {
            if (mat.materialId) {
              const estRef = doc(db, 'estoque', mat.materialId);
              const estAtual = estoqueDB.find(e => e.id === mat.materialId);
-             batch.update(estRef, { quantidade: Math.max(0, (estAtual?.quantidade || 0) - (Number(mat.quantidade) || 0)) });
+             batch.update(estRef, { 
+               utilizados: (estAtual?.utilizados || 0) + (Number(mat.quantidade) || 0)
+             });
            }
         });
         dataToUpdate.estoqueBaixado = true;
@@ -117,7 +120,9 @@ export default function Orcamentos() {
            if (mat.materialId) {
              const estRef = doc(db, 'estoque', mat.materialId);
              const estAtual = estoqueDB.find(e => e.id === mat.materialId);
-             batch.update(estRef, { quantidade: (estAtual?.quantidade || 0) + (Number(mat.quantidade) || 0) });
+             batch.update(estRef, { 
+               utilizados: Math.max(0, (estAtual?.utilizados || 0) - (Number(mat.quantidade) || 0))
+             });
            }
         });
         dataToUpdate.estoqueBaixado = false;
@@ -158,7 +163,7 @@ export default function Orcamentos() {
   // Finance states
   const [custosExtras, setCustosExtras] = useState<{ descricao: string; valor: string | number }[]>([]);
   const [margemLucro, setMargemLucro] = useState<number | ''>(20);
-  const [aliquotaNF, setAliquotaNF] = useState<number>(0);
+  const [aliquotaNF, setAliquotaNF] = useState<number | ''>(0);
   const [margemPadrao, setMargemPadrao] = useState<number>(20);
 
   // Status workflow
@@ -250,7 +255,11 @@ export default function Orcamentos() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setConfigGerais(data);
-        if (data.aliquotaNF !== undefined) setAliquotaNF(Number(data.aliquotaNF));
+        if (data.aliquotaNF !== undefined) {
+           if (!isModalOpen && !editingOrcamentoId) {
+              setAliquotaNF(Number(data.aliquotaNF));
+           }
+        }
         if (data.margemLucro !== undefined) {
            setMargemPadrao(Number(data.margemLucro));
            if (!isModalOpen && !editingOrcamentoId) {
@@ -328,12 +337,7 @@ export default function Orcamentos() {
     }
 
     setMargemLucro(orcamento.margemLucro !== undefined ? orcamento.margemLucro : 20);
-    
-    if (orcamento.status === 'Em Aberto' || orcamento.status === 'Rascunho') {
-       setAliquotaNF(Number(configGerais?.aliquotaNF || 0));
-    } else {
-       setAliquotaNF(orcamento.aliquotaNF !== undefined ? orcamento.aliquotaNF : Number(configGerais?.aliquotaNF || 0));
-    }
+    setAliquotaNF(orcamento.aliquotaNF !== undefined ? orcamento.aliquotaNF : Number(configGerais?.aliquotaNF || 0));
     
     // Map legacy status if needed to exact kanban column IDs
     const s = orcamento.status as string;
@@ -362,7 +366,9 @@ export default function Orcamentos() {
           if (mat.materialId) {
             const estRef = doc(db, 'estoque', mat.materialId);
             const estAtual = estoqueDB.find(e => e.id === mat.materialId);
-            batch.update(estRef, { quantidade: (estAtual?.quantidade || 0) + mat.quantidade });
+            batch.update(estRef, { 
+              utilizados: Math.max(0, (estAtual?.utilizados || 0) - (Number(mat.quantidade) || 0))
+            });
           }
         });
         batch.delete(doc(db, 'orcamentos', itemToDelete));
@@ -408,28 +414,49 @@ export default function Orcamentos() {
      ));
   };
 
+  const updatePratoQuantidade = (pratoId: string, quantidadeStr: string) => {
+     setPratosSelecionados(prev => prev.map(p => 
+       p.pratoId === pratoId 
+         ? { ...p, quantidadeOverride: quantidadeStr ? Number(quantidadeStr) : undefined }
+         : p
+     ));
+  };
+
   const convidados = Number(numConvidados) || 0;
   
   const custoAlimentos = pratosSelecionados.reduce((acc, prato) => {
      const rendimento = Number(prato.rendimento) || 1;
      const custo = Number(prato.custo) || 0;
      const tipoVenda = prato.tipoVenda || 'Por Quilo';
-     const fatorDeMultiplicacao = tipoVenda === 'Por Unidade' ? convidados * rendimento : convidados / rendimento;
+     
+     let fatorDeMultiplicacao = tipoVenda === 'Por Unidade' ? convidados * rendimento : convidados / rendimento;
+     if (prato.quantidadeOverride !== undefined && prato.quantidadeOverride > 0) {
+        fatorDeMultiplicacao = prato.quantidadeOverride;
+     }
+
      const custoDoItem = fatorDeMultiplicacao * custo;
      return acc + custoDoItem;
   }, 0);
 
   const totalCustosExtras = custosExtras.reduce((acc, curr) => acc + (parseCurrency(String(curr.valor)) || 0), 0);
+  const totalCustosEstoque = materiaisEstoque.reduce((acc, currentMat) => {
+     const estItem = estoqueDB.find(e => e.id === currentMat.materialId);
+     const valor = estItem?.valorUnitario || 0;
+     const quantidade = Number(currentMat.quantidade) || 0;
+     return acc + (valor * quantidade);
+  }, 0);
   const margem = Number(margemLucro) || 0;
 
-  const custoOperacionalTotal = custoAlimentos + totalCustosExtras;
+  const custoOperacionalTotal = custoAlimentos + totalCustosExtras + totalCustosEstoque;
 
-  const somaPercentuais = (margem / 100) + ((aliquotaNF || 0) / 100);
-  const fatorDivisor = somaPercentuais < 1 ? (1 - somaPercentuais) : 1;
-  
-  const valorVendaSugerido = custoOperacionalTotal / fatorDivisor;
-  const valorImposto = valorVendaSugerido * ((aliquotaNF || 0) / 100);
-  const lucroEstimado = valorVendaSugerido * (margem / 100);
+  const margemFormatada = margem / 100;
+  const aliquotaDecimal = (aliquotaNF || 0) / 100;
+  const divisorImposto = 1 - (aliquotaDecimal * (1 + margemFormatada));
+  const fatorDivisorSeguro = divisorImposto > 0 ? divisorImposto : 1; 
+
+  const valorVendaSugerido = (custoOperacionalTotal * (1 + margemFormatada)) / fatorDivisorSeguro;
+  const valorImposto = valorVendaSugerido * aliquotaDecimal;
+  const lucroEstimado = (custoOperacionalTotal + valorImposto) * margemFormatada;
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -453,7 +480,7 @@ export default function Orcamentos() {
           custoAlimentos,
           custoTotal: custoOperacionalTotal,
           margemLucro: margem,
-          aliquotaNF,
+          aliquotaNF: Number(aliquotaNF) || 0,
           valorVenda: valorVendaSugerido,
           status: status,
           imagemUrl: imagemUrl,
@@ -461,7 +488,7 @@ export default function Orcamentos() {
           ultimoEditor: userProfile?.nome || undefined,
         };
 
-        let willBeBaixado = status === 'Aprovado' || status === 'Entregue' || status === 'Recusado';
+        let willBeBaixado = status === 'Aprovado' || status === 'Entregue';
         orcamentoData.estoqueBaixado = willBeBaixado;
 
         if (willBeBaixado) {
@@ -472,6 +499,7 @@ export default function Orcamentos() {
         
         if (!editingOrcamentoId) {
            orcamentoData.createdAt = serverTimestamp() as any;
+           orcamentoData.numero = Math.max(0, ...orcamentos.map(o => o.numero || 0)) + 1;
         }
 
       try {
@@ -502,7 +530,9 @@ export default function Orcamentos() {
            if (delta !== 0) {
              const estRef = doc(db, 'estoque', matId);
              const estAtual = estoqueDB.find(e => e.id === matId);
-             batch.update(estRef, { quantidade: Math.max(0, (estAtual?.quantidade || 0) + delta) });
+             batch.update(estRef, { 
+               utilizados: Math.max(0, (estAtual?.utilizados || 0) - delta)
+             });
            }
          });
 
@@ -642,6 +672,13 @@ export default function Orcamentos() {
     return <span className="px-3 py-1 text-[10px] font-bold rounded-full bg-red-500 text-white">NÃO</span>;
   };
 
+  const filteredOrcamentos = orcamentos.filter(orc => {
+    const term = searchTerm.toLowerCase();
+    const cliente = orc.clienteNome?.toLowerCase() || '';
+    const evento = orc.nomeEvento?.toLowerCase() || '';
+    return cliente.includes(term) || evento.includes(term);
+  });
+
   return (
     <div className="flex flex-col h-full relative gap-6">
       {error && (
@@ -654,9 +691,9 @@ export default function Orcamentos() {
       {/* Header Actions & Switcher */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0 w-full">
         
-        {/* View Mode Pill Switcher */}
-        <div className="flex-1 flex items-center justify-start">
-          <div className="flex items-center bg-white rounded-md border border-mesaninas-creme/60 max-w-max shadow-sm relative h-12 lg:h-10">
+        {/* View Mode Pill Switcher & Search */}
+        <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-start gap-4">
+          <div className="flex items-center bg-white rounded-md border border-mesaninas-creme/60 max-w-max shadow-sm relative h-12 lg:h-10 shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('list')}
@@ -679,6 +716,17 @@ export default function Orcamentos() {
             >
               Funil de Vendas (Kanban)
             </button>
+          </div>
+          
+          <div className="flex-1 max-w-md relative">
+            <input
+              type="text"
+              placeholder="Buscar orçamento..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-12 lg:h-10 pl-10 pr-4 bg-white border border-mesaninas-creme rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-green/30"
+            />
+            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
         </div>
 
@@ -713,15 +761,18 @@ export default function Orcamentos() {
                      <tr>
                        <td colSpan={8} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Carregando dados...</td>
                      </tr>
-                   ) : orcamentos.length === 0 ? (
+                   ) : filteredOrcamentos.length === 0 ? (
                      <tr>
                        <td colSpan={8} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum orçamento gerado.</td>
                      </tr>
                    ) : (
-                     orcamentos.map((orc) => (
+                     filteredOrcamentos.map((orc) => (
                        <tr key={orc.id} className="hover:bg-mesaninas-creme/30 group">
                          <td className="px-6 py-4">
-                            <div className="font-bold uppercase tracking-wider text-xs text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">{orc.clienteNome}</div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                               {orc.numero && <span className="bg-[#00382b]/10 text-[#00382b] text-[9px] font-black px-1.5 py-0.5 rounded-md">#{orc.numero}</span>}
+                               <div className="font-bold uppercase tracking-wider text-xs text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">{orc.clienteNome}</div>
+                            </div>
                             <div className="text-[10px] text-mesaninas-green/60 mt-1 line-clamp-1 max-w-sm normal-case tracking-normal font-normal">
                                {orc.nomeEvento || 'Evento não nomeado'}
                             </div>
@@ -783,14 +834,17 @@ export default function Orcamentos() {
                <div className="lg:hidden flex flex-col p-4 gap-4">
                   {loading ? (
                      <div className="text-center text-mesaninas-green/50 text-sm py-8">Carregando dados...</div>
-                   ) : orcamentos.length === 0 ? (
+                   ) : filteredOrcamentos.length === 0 ? (
                      <div className="text-center text-mesaninas-green/50 text-sm py-8">Nenhum orçamento encontrado.</div>
                    ) : (
-                     orcamentos.map((orc) => (
+                     filteredOrcamentos.map((orc) => (
                        <div key={orc.id} className="bg-white border border-mesaninas-creme/70 rounded-xl p-4 shadow-sm flex flex-col gap-3">
                          <div className="flex justify-between items-start gap-2 border-b border-mesaninas-creme/50 pb-3 mb-1">
                            <div>
-                             <div className="text-[10px] uppercase font-bold text-mesaninas-green/50 mb-0.5">Cliente</div>
+                             <div className="flex items-center gap-2 mb-0.5">
+                               <div className="text-[10px] uppercase font-bold text-mesaninas-green/50">Cliente</div>
+                               {orc.numero && <span className="bg-[#00382b]/10 text-[#00382b] text-[9px] font-black px-1.5 py-0.5 rounded-md">#{orc.numero}</span>}
+                             </div>
                              <div className="font-bold text-mesaninas-green text-base leading-tight">{orc.clienteNome}</div>
                              <div className="text-xs text-mesaninas-green/80 mt-1">{orc.nomeEvento || 'Evento não nomeado'}</div>
                            </div>
@@ -847,7 +901,7 @@ export default function Orcamentos() {
              <div className="flex-1 w-full flex flex-col pt-2">
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full flex-1 items-start pb-4">
                  {KANBAN_COLUMNS.map((col) => {
-                    const colOrcamentos = orcamentos.filter(orc => {
+                    const colOrcamentos = filteredOrcamentos.filter(orc => {
                        const statusLower = (orc.status || 'Em Aberto').toLowerCase();
                        return col.dbStatuses.some(ds => ds.toLowerCase() === statusLower);
                     });
@@ -896,7 +950,7 @@ export default function Orcamentos() {
                                   >
                                      {/* Novo Cabeçalho do Card (Top Bar) */}
                                      <div className="flex items-center justify-between px-4 py-3 bg-mesaninas-green/10 border-b border-mesaninas-green/20">
-                                        <div className="flex-1 truncate overflow-hidden pr-2">
+                                        <div className="flex-1 truncate overflow-hidden pr-2 flex items-center gap-2">
                                            <h4 className="font-bold text-mesaninas-green text-xs truncate" title={orc.nomeEvento || 'Serviço de Buffet'}>
                                               {orc.nomeEvento || 'Serviço de Buffet'}
                                            </h4>
@@ -931,10 +985,10 @@ export default function Orcamentos() {
                                      {/* Corpo do Card (Conteúdo Branco) */}
                                      <div className="p-4 flex flex-col gap-2 bg-white">
                                         <div className="flex justify-between items-start">
-                                           <span className="font-semibold text-xs text-mesaninas-green/80 flex-1 truncate pr-2" title={orc.clienteNome}>{orc.clienteNome}</span>
-                                           {orc.statusPagamento?.toLowerCase() === 'pago' && (
-                                              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded-md shrink-0 uppercase ml-auto">Pago</span>
-                                           )}
+                                           <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                              {orc.numero && <span className="shrink-0 bg-[#00382b]/10 text-[#00382b] text-[9px] font-black px-1.5 py-0.5 rounded-md">#{orc.numero}</span>}
+                                              <span className="font-semibold text-xs text-mesaninas-green/80 truncate pr-2" title={orc.clienteNome}>{orc.clienteNome}</span>
+                                           </div>
                                         </div>
                                         
                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-mesaninas-green/70">
@@ -944,11 +998,8 @@ export default function Orcamentos() {
 
                                         <div className="flex justify-between items-end mt-2 pt-2 border-t border-mesaninas-creme/65">
                                            <div className="flex flex-col flex-1 pr-2">
-                                              {orc.ultimoEditor && (
-                                                 <span className="text-[9px] text-mesaninas-green/50 leading-tight">
-                                                    Última edição:<br />
-                                                    <span className="font-semibold truncate block w-full">{orc.ultimoEditor}</span>
-                                                 </span>
+                                              {orc.statusPagamento?.toLowerCase() === 'pago' && (
+                                                 <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md shrink-0 uppercase w-fit">Pago</span>
                                               )}
                                            </div>
                                            
@@ -956,22 +1007,6 @@ export default function Orcamentos() {
                                               <span className="font-extrabold text-[#748e72] text-[14px]">
                                                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(orc.valorVenda)}
                                               </span>
-                                              
-                                              {/* Status Switcher */}
-                                              <select
-                                                 value={
-                                                   (orc.status === 'Rascunho' ? 'Em Aberto' : 
-                                                    orc.status === 'Entregue' ? 'Aprovado' : 
-                                                    orc.status) || 'Em Aberto'
-                                                 }
-                                                 onChange={(e) => handleUpdateStatus(orc.id, e.target.value)}
-                                                 className="px-2 py-0.5 border border-mesaninas-creme/80 rounded bg-mesaninas-creme/20 text-[10px] text-mesaninas-green font-bold focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow hover:bg-white cursor-pointer"
-                                              >
-                                                 <option value="Em Aberto">Rascunho</option>
-                                                 <option value="Enviado">Orçamento Enviado</option>
-                                                 <option value="Aprovado">Aprovado</option>
-                                                 <option value="Recusado">Concluído</option>
-                                              </select>
                                            </div>
                                         </div>
                                      </div>
@@ -1003,8 +1038,13 @@ export default function Orcamentos() {
           <div className="w-[90vw] h-[90vh] overflow-hidden rounded-2xl bg-[#f4efdc] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-mesaninas-creme/50 flex justify-between items-center bg-white/50 shrink-0">
               <div>
-                 <h3 className="font-serif font-bold text-lg text-mesaninas-green tracking-tight">
-                   {editingOrcamentoId ? 'Editar Orçamento' : 'Novo Orçamento'}
+                 <h3 className="font-serif font-bold text-lg text-mesaninas-green tracking-tight flex items-center gap-3">
+                   <span>{editingOrcamentoId ? 'Editar Orçamento' : 'Novo Orçamento'}</span>
+                   {editingOrcamentoId && (
+                     <span className="bg-[#00382b]/10 text-[#00382b] text-xs font-black px-2 py-1 rounded-md">
+                       #{orcamentos.find(o => o.id === editingOrcamentoId)?.numero || 'S/N'}
+                     </span>
+                   )}
                  </h3>
                  <p className="text-xs text-mesaninas-green/70">Configuração de evento comercial</p>
               </div>
@@ -1220,23 +1260,49 @@ export default function Orcamentos() {
                                 <button type="button" onClick={() => setPratosSelecionados(prev => prev.filter(p => p.pratoId !== prato.pratoId))} className="text-mesaninas-peach hover:text-red-500 font-bold p-1 rounded transition-colors w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-mesaninas-creme/50 hover:border-red-200">×</button>
                               </div>
                             </div>
-                            {pratoRef && pratoRef.fornecedoresCustos && pratoRef.fornecedoresCustos.length > 0 && (
-                              <div className="flex flex-col gap-1 mt-1">
-                                <label className="text-[10px] font-bold text-mesaninas-green/60 uppercase tracking-wider">Fornecedor Selecionado</label>
-                                <select 
-                                  value={prato.fornecedorId || ''}
-                                  onChange={(e) => updatePratoFornecedor(prato.pratoId, e.target.value)}
-                                  className="text-xs bg-white border border-mesaninas-creme/80 rounded px-2 h-8 text-mesaninas-green font-medium focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow"
-                                >
-                                  <option value="" disabled>Escolha um fornecedor...</option>
-                                  {pratoRef.fornecedoresCustos.map(fc => (
-                                    <option key={fc.fornecedorId} value={fc.fornecedorId}>
-                                      {fc.nome?.toUpperCase()} - R$ {fc.custo.toFixed(2)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
+                            
+                            <div className="flex flex-col md:flex-row gap-4 mt-1">
+                               {pratoRef && pratoRef.fornecedoresCustos && pratoRef.fornecedoresCustos.length > 0 && (
+                                 <div className="flex flex-col gap-1 flex-1">
+                                   <label className="text-[10px] font-bold text-mesaninas-green/60 uppercase tracking-wider">Fornecedor Selecionado</label>
+                                   <select 
+                                     value={prato.fornecedorId || ''}
+                                     onChange={(e) => updatePratoFornecedor(prato.pratoId, e.target.value)}
+                                     className="text-xs bg-white border border-mesaninas-creme/80 rounded px-2 h-8 text-mesaninas-green font-medium focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow"
+                                   >
+                                     <option value="" disabled>Escolha um fornecedor...</option>
+                                     {pratoRef.fornecedoresCustos.map(fc => (
+                                       <option key={fc.fornecedorId} value={fc.fornecedorId}>
+                                         {fc.nome?.toUpperCase()} - R$ {fc.custo.toFixed(2)}
+                                       </option>
+                                     ))}
+                                   </select>
+                                 </div>
+                               )}
+                               
+                               <div className="flex flex-col gap-1">
+                                 <label className="text-[10px] font-bold text-mesaninas-green/60 uppercase tracking-wider">Quant. do Prato/Produto</label>
+                                 <div className="flex items-center gap-2">
+                                   <input 
+                                     type="number" 
+                                     min="0" 
+                                     step="any"
+                                     value={prato.quantidadeOverride !== undefined ? prato.quantidadeOverride : ''}
+                                     onChange={(e) => updatePratoQuantidade(prato.pratoId, e.target.value)}
+                                     placeholder={(()=>{
+                                         const c = Number(numConvidados) || 0;
+                                         const r = Number(prato.rendimento) || 1;
+                                         const calculated = prato.tipoVenda === 'Por Unidade' ? c * r : c / r;
+                                         return String(calculated);
+                                     })()}
+                                     className="w-24 text-center text-xs bg-white border border-mesaninas-creme/80 rounded h-8 text-mesaninas-green font-medium focus:outline-none focus:ring-1 focus:ring-mesaninas-yellow placeholder:text-mesaninas-green/40"
+                                   />
+                                   <span className="text-[10px] text-mesaninas-green/60">
+                                     {prato.tipoVenda === 'Por Unidade' ? 'un' : 'kg'} <span className="opacity-60">(auto se vazio)</span>
+                                   </span>
+                                 </div>
+                               </div>
+                            </div>
                          </li>
                          );
                       })}
@@ -1264,7 +1330,7 @@ export default function Orcamentos() {
                     </div>
                     {materiaisEstoque.map((mat, idx) => {
                        const estItem = estoqueDB.find(e => e.id === mat.materialId);
-                       const qtdDisp = estItem ? estItem.quantidade : 0;
+                       const qtdDisp = estItem ? (estItem.quantidade - (estItem.utilizados || 0)) : 0;
                        const matQtd = Number(mat.quantidade) || 0;
                        const isWarning = matQtd > qtdDisp;
                        return (
@@ -1343,18 +1409,34 @@ export default function Orcamentos() {
                        </Button>
                     </div>
                     
-                    <div className="pt-4 border-t border-mesaninas-creme/50 mt-auto">
-                       <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Margem de Lucro Desejada (%)</label>
-                       <div className="relative w-full sm:w-1/2">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={margemLucro}
-                            onChange={e => setMargemLucro(e.target.value ? Number(e.target.value) : '')}
-                            className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green pr-8"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mesaninas-green/50 font-bold">%</span>
+                    <div className="pt-4 border-t border-mesaninas-creme/50 mt-auto grid grid-cols-2 gap-4">
+                       <div>
+                          <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Margem de Lucro (%)</label>
+                          <div className="relative w-full">
+                             <input
+                               type="number"
+                               min="0"
+                               max="100"
+                               value={margemLucro}
+                               onChange={e => setMargemLucro(e.target.value ? Number(e.target.value) : '')}
+                               className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green pr-8"
+                             />
+                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mesaninas-green/50 font-bold">%</span>
+                          </div>
+                       </div>
+                       <div>
+                          <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">Impostos NF (%)</label>
+                          <div className="relative w-full">
+                             <input
+                               type="number"
+                               min="0"
+                               max="100"
+                               value={aliquotaNF}
+                               onChange={e => setAliquotaNF(e.target.value ? Number(e.target.value) : '')}
+                               className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green pr-8"
+                             />
+                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mesaninas-green/50 font-bold">%</span>
+                          </div>
                        </div>
                     </div>
                  </div>
@@ -1363,35 +1445,46 @@ export default function Orcamentos() {
                  <div className="bg-mesaninas-green rounded-xl p-5 md:p-6 text-mesaninas-creme shadow-xl h-full flex flex-col justify-center">
                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-yellow mb-4 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-mesaninas-yellow animate-pulse"></div>
-                    Motor de Cálculo (Live)
+                    Cálculo
                  </h4>
                  
                  <div className="space-y-3 text-sm">
                     <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
-                       <span className="text-mesaninas-creme/70">Custo Total (Cardápio)</span>
+                       <span className="text-mesaninas-creme/70">Cardápio</span>
                        <span className="text-mesaninas-creme font-medium">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(custoAlimentos)}</span>
                     </div>
                     <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
-                       <span className="text-mesaninas-creme/70">Equipe & Logística</span>
+                       <span className="text-mesaninas-creme/70">Custos Operacionais e Logística</span>
                        <span className="text-mesaninas-creme font-medium">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalCustosExtras)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
+                       <span className="text-mesaninas-creme/70">Materiais do Estoque</span>
+                       <span className="text-mesaninas-creme font-medium">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalCustosEstoque)}</span>
                     </div>
                     <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
                        <span className="font-medium text-mesaninas-creme">Custo Operacional Total</span>
                        <span className="text-mesaninas-peach font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(custoOperacionalTotal)}</span>
                     </div>
-                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
-                       <span className="text-mesaninas-yellow font-medium">+ Lucro Estimado ({margem}%)</span>
-                       <span className="text-mesaninas-yellow font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lucroEstimado)}</span>
-                    </div>
+                    
                     {aliquotaNF > 0 && (
                       <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
                          <span className="text-orange-300 font-medium">+ Impostos NF ({aliquotaNF}%)</span>
                          <span className="text-orange-300 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorImposto)}</span>
                       </div>
                     )}
+
+                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
+                       <span className="font-bold text-mesaninas-creme">Subtotal</span>
+                       <span className="text-white font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(custoOperacionalTotal + valorImposto)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
+                       <span className="text-mesaninas-yellow font-medium">+ Lucro Estimado ({margem}%)</span>
+                       <span className="text-mesaninas-yellow font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lucroEstimado)}</span>
+                    </div>
                     
                     <div className="flex justify-between items-end pt-4 mt-2">
-                       <span className="text-xs font-bold uppercase tracking-wider text-mesaninas-creme/70">Sugerido para Venda</span>
+                       <span className="text-xs font-bold uppercase tracking-wider text-mesaninas-creme/70">Valor Total</span>
                        <span className="text-2xl font-bold text-mesaninas-green bg-mesaninas-yellow px-3 py-1 rounded-lg border border-mesaninas-yellow/50">
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorVendaSugerido)}
                        </span>
@@ -1413,7 +1506,7 @@ export default function Orcamentos() {
               </button>
               <button
                 onClick={handleCadastrar}
-                disabled={isSubmitting || !nomeEvento || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > e.quantidade; })}
+                disabled={isSubmitting || !nomeEvento || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > (e.quantidade - (e.utilizados || 0)); })}
                 className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Gerando...' : (editingOrcamentoId ? 'Atualizar Orçamento' : 'Salvar Proposta')}
@@ -1521,9 +1614,16 @@ export default function Orcamentos() {
                         </div>
                      )}
                      <div className="space-y-4">
-                        <h2 className="text-sm font-sans font-bold uppercase tracking-wider text-mesaninas-green border-b border-gray-100 pb-1.5 matches-print-text-dark">
-                           Dados da Proposta Comercial e Evento
-                        </h2>
+                        <div className="flex items-end justify-between border-b border-gray-100 pb-1.5 matches-print-text-dark">
+                           <h2 className="text-sm font-sans font-bold uppercase tracking-wider text-mesaninas-green">
+                              Dados da Proposta Comercial e Evento
+                           </h2>
+                           {printOrcamento.numero && (
+                              <span className="text-xs font-sans font-bold uppercase tracking-widest text-gray-400">
+                                 Ordem de Serviço #{printOrcamento.numero}
+                              </span>
+                           )}
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm font-sans">
                            <div className="flex flex-col gap-1">
                               <span className="text-[10px] uppercase font-bold text-gray-400">Contratante / Cliente</span>

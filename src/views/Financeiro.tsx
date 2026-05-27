@@ -115,7 +115,19 @@ export default function Financeiro() {
   const baseTransacoes = useMemo(() => {
     const list: Transacao[] = [];
     orcamentos.forEach(orc => {
-       const dataTransacao = orc.dataEvento || (orc.createdAt ? new Date(orc.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+       let fallbackDate = new Date();
+       if (orc.createdAt) {
+         if (typeof (orc.createdAt as any).toDate === 'function') {
+           fallbackDate = (orc.createdAt as any).toDate();
+         } else {
+           fallbackDate = new Date(orc.createdAt as any);
+         }
+       }
+       // Ensure fallbackDate is valid, otherwise use current date to avoid crash
+       if (isNaN(fallbackDate.getTime())) {
+         fallbackDate = new Date();
+       }
+       const dataTransacao = orc.dataEvento || fallbackDate.toISOString().split('T')[0];
        const statusTransacao = orc.statusPagamento === 'Pago' ? 'Pago' : 'Pendente';
        const eventoNome = `Evento: ${orc.clienteNome || ''} ${orc.nomeEvento || ''}`.trim();
 
@@ -163,16 +175,29 @@ export default function Financeiro() {
           });
        }
 
+       // 3B. Despesa - Materiais (Estoque)
+       const custoExtrasTotal = orc.custosExtras?.reduce((sum, e) => sum + Number(e.valor || 0), 0) || 0;
+       const custoAlimentosTotal = orc.custoAlimentos || 0;
+       // orc.custoTotal correctly contains the sum of Alimentos + Extras + Materiais
+       const custoMateriais = Math.max(0, (orc.custoTotal || 0) - custoAlimentosTotal - custoExtrasTotal);
+       
+       if (custoMateriais > 0) {
+          list.push({
+             id: `orc_desp_mat_${orc.id}`,
+             data: dataTransacao,
+             descricao: `Materiais (Estoque): ${eventoNome}`,
+             categoria: 'Estoque',
+             tipo: 'Despesa',
+             valor: custoMateriais,
+             status: statusTransacao,
+             createdAt: orc.createdAt
+          });
+       }
+
        // 4. Despesa - Impostos
        const currentAliquota = orc.aliquotaNF !== undefined ? orc.aliquotaNF : Number(configGerais?.aliquotaNF || 0);
        if (currentAliquota > 0) {
-          const custoTotal = (orc.custoAlimentos || 0) + (orc.custosExtras?.reduce((sum, e) => sum + Number(e.valor || 0), 0) || 0);
-          const margem = orc.margemLucro !== undefined ? orc.margemLucro : Number(configGerais?.margemLucro || 20);
-          
-          const somaPercentuais = (margem / 100) + (currentAliquota / 100);
-          const fatorDivisor = somaPercentuais < 1 ? (1 - somaPercentuais) : 1;
-          const valorVendaSugerido = custoTotal / fatorDivisor;
-          const valorImposto = valorVendaSugerido * (currentAliquota / 100);
+          const valorImposto = (orc.valorVenda || 0) * (currentAliquota / 100);
 
           if (valorImposto > 0) {
              list.push({
@@ -235,9 +260,9 @@ export default function Financeiro() {
   const lucroLiquido = receitasBruta - custoTotal;
 
   const margemLucroMedia = useMemo(() => {
-    if (receitasBruta === 0) return 0;
-    return (lucroLiquido / receitasBruta) * 100;
-  }, [receitasBruta, lucroLiquido]);
+    if (custoTotal === 0) return 0;
+    return (lucroLiquido / custoTotal) * 100;
+  }, [custoTotal, lucroLiquido]);
 
   // Gráfico de Barras: Comparativo mensal de entradas vs saídas do ano
   const barChartData = useMemo(() => {
@@ -523,16 +548,18 @@ export default function Financeiro() {
           {/* Card 4: Margem de Lucro Média (%) */}
           <div className="p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-colors">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-[10px] font-bold tracking-wider uppercase text-mesaninas-green/60 uppercase">Margem de Lucro</span>
+              <span className="text-[10px] font-bold tracking-wider uppercase text-mesaninas-green/60 uppercase">Margem Líquida</span>
               <div className="p-1.5 bg-blue-100/50 rounded-md">
                  <TrendingUp className="w-4 h-4 text-blue-500" />
               </div>
             </div>
             <div>
-              <div className="text-2xl font-bold font-serif text-mesaninas-green">
+              <div className="text-2xl font-bold font-serif text-mesaninas-green" title="Calculado como (Lucro Líquido ÷ Custo Total) * 100">
                 {margemLucroMedia.toFixed(1)}%
               </div>
-              <p className="text-[9px] text-mesaninas-green/50 mt-1 uppercase font-semibold">Eficiência lucrativa geral</p>
+              <p className="text-[9px] text-mesaninas-green/50 mt-1 uppercase font-semibold">
+                 Lucro ÷ Custo Total
+              </p>
             </div>
           </div>
         </div>
@@ -621,10 +648,13 @@ export default function Financeiro() {
 
         {/* TABELA DE LANÇAMENTOS RECENTES */}
         <div className="space-y-4">
-           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
+           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mt-2">
               <div>
                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#00382b]/85">Lançamentos Recentes</h3>
-                 <p className="text-xs text-mesaninas-green/70">Extrato detalhado das movimentações financeiras de caixa.</p>
+                 <p className="text-[11px] text-mesaninas-green/70">Extrato detalhado das movimentações financeiras de caixa.</p>
+                 <p className="text-[10px] text-mesaninas-green/50 mt-1 max-w-md leading-tight">
+                   <span className="font-bold text-mesaninas-yellow/80">Nota Técnica:</span> Receitas e Custos advindos de Orçamentos/Eventos são dispostos com base na <strong className="text-mesaninas-green/70">Data do Evento</strong>, adotando o princípio do regime de competência para organização do fluxo mensal. Para visualizá-los, certifique-se de navegar até o mês correspondente ao evento.
+                 </p>
               </div>
 
               <div className="flex items-center gap-3 w-full sm:w-auto">

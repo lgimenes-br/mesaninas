@@ -5,6 +5,20 @@ import { ItemEstoque, Fornecedor } from '../types';
 import { Pencil, Trash2, ChevronDown, Search } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
+const formatCurrencyInput = (value: string | number) => {
+  if (value === undefined || value === null) return '';
+  let strVal = typeof value === 'number' ? (value * 100).toFixed(0) : String(value);
+  const onlyDigits = strVal.replace(/\D/g, '');
+  if (!onlyDigits) return '';
+  const num = parseInt(onlyDigits, 10) / 100;
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+};
+
+const parseCurrency = (value: string) => {
+  const onlyDigits = String(value).replace(/\D/g, '');
+  return parseInt(onlyDigits, 10) / 100;
+};
+
 export default function Estoque() {
   const [estoque, setEstoque] = useState<ItemEstoque[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -16,6 +30,7 @@ export default function Estoque() {
   const [nome, setNome] = useState('');
   const [unidade, setUnidade] = useState('Unidade');
   const [quantidade, setQuantidade] = useState('');
+  const [valorTotal, setValorTotal] = useState('');
   const [fornecedoresRelacionados, setFornecedoresRelacionados] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,6 +44,7 @@ export default function Estoque() {
     setNome('');
     setUnidade('Unidade');
     setQuantidade('');
+    setValorTotal('');
     setFornecedoresRelacionados([]);
     setIsDropdownOpen(false);
     setIsModalOpen(true);
@@ -39,6 +55,7 @@ export default function Estoque() {
     setNome(item.nome);
     setUnidade(item.unidadeMedida);
     setQuantidade(item.quantidade.toString());
+    setValorTotal(item.valorUnitario ? formatCurrencyInput(item.valorUnitario * item.quantidade) : '');
     setFornecedoresRelacionados(item.fornecedoresRelacionados || []);
     setIsDropdownOpen(false);
     setIsModalOpen(true);
@@ -107,18 +124,24 @@ export default function Estoque() {
 
     setIsSubmitting(true);
     try {
+      const parsedValor = parseCurrency(valorTotal) || 0;
+      const parsedQtd = parseFloat(quantidade) || 0;
+      const calculatedUnitCost = (parsedQtd > 0 && parsedValor > 0) ? parsedValor / parsedQtd : 0;
+      
       if (editingItem) {
         await updateDoc(doc(db, 'estoque', editingItem.id), {
           nome,
           unidadeMedida: unidade,
-          quantidade: parseFloat(quantidade),
+          quantidade: parsedQtd,
+          valorUnitario: calculatedUnitCost,
           fornecedoresRelacionados
         });
       } else {
         await addDoc(collection(db, 'estoque'), {
           nome,
           unidadeMedida: unidade,
-          quantidade: parseFloat(quantidade),
+          quantidade: parsedQtd,
+          valorUnitario: calculatedUnitCost,
           fornecedoresRelacionados
         });
       }
@@ -126,6 +149,7 @@ export default function Estoque() {
       setNome('');
       setUnidade('Unidade');
       setQuantidade('');
+      setValorTotal('');
       setFornecedoresRelacionados([]);
     } catch (err: any) {
       console.error(err);
@@ -183,6 +207,9 @@ export default function Estoque() {
             <tr className="border-b border-[#f4efdc]/50">
               <th className="px-6 py-3 font-semibold">Item</th>
               <th className="px-6 py-3 font-semibold text-center">Unidade</th>
+              <th className="px-6 py-3 font-semibold text-right">Custo Unitário</th>
+              <th className="px-6 py-3 font-semibold text-right">Qtd Total</th>
+              <th className="px-6 py-3 font-semibold text-right">Qtd Utilizada</th>
               <th className="px-6 py-3 font-semibold text-right">Qtd Disponível</th>
               <th className="px-6 py-3 font-semibold text-right">Ações</th>
             </tr>
@@ -190,11 +217,11 @@ export default function Estoque() {
           <tbody className="divide-y divide-mesaninas-creme/50">
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Carregando dados...</td>
+                <td colSpan={7} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Carregando dados...</td>
               </tr>
             ) : filteredEstoque.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">
+                <td colSpan={7} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">
                   {searchTerm ? 'Nenhum item encontrado para a busca.' : 'Nenhum item cadastrado.'}
                 </td>
               </tr>
@@ -210,7 +237,16 @@ export default function Estoque() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right font-bold text-xs text-mesaninas-green">
+                    {item.valorUnitario ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valorUnitario) : '-'}
+                  </td>
+                  <td className="px-6 py-4 text-right font-bold text-xs text-mesaninas-green">
                     {item.quantidade}
+                  </td>
+                  <td className="px-6 py-4 text-right font-bold text-xs text-mesaninas-green/70">
+                    {item.utilizados || 0}
+                  </td>
+                  <td className="px-6 py-4 text-right font-bold text-xs text-mesaninas-green">
+                    {Math.max(0, item.quantidade - (item.utilizados || 0))}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -261,7 +297,14 @@ export default function Estoque() {
                      <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[10px] font-bold uppercase tracking-wider">
                         {item.unidadeMedida?.toUpperCase()}
                      </span>
-                     <span className="text-mesaninas-green font-bold text-xs">{item.quantidade}</span>
+                     <div className="flex gap-4">
+                       <span className="text-mesaninas-green text-xs">
+                         {item.valorUnitario ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valorUnitario) : '-'} / un
+                       </span>
+                       <span className="text-mesaninas-green/50 text-xs">Total: {item.quantidade}</span>
+                       <span className="text-mesaninas-green/70 text-xs">Usado: {item.utilizados || 0}</span>
+                       <span className="text-mesaninas-green font-bold text-xs">Livres: {Math.max(0, item.quantidade - (item.utilizados || 0))}</span>
+                     </div>
                   </div>
                 </div>
               ))
@@ -338,6 +381,20 @@ export default function Estoque() {
                         onChange={e => setQuantidade(e.target.value)}
                         className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
                         placeholder="0"
+                      />
+                    </div>
+
+                    <div className="col-span-1">
+                      <label className="block text-xs font-semibold text-mesaninas-green/80 mb-1">
+                        Custo Total (R$)*
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={valorTotal}
+                        onChange={e => setValorTotal(formatCurrencyInput(e.target.value))}
+                        className="w-full px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+                        placeholder="R$ 0,00"
                       />
                     </div>
                   </div>

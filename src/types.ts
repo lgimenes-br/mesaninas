@@ -51,8 +51,10 @@ export interface ItemEstoque {
   id: string;
   nome: string;
   quantidade: number;
+  utilizados?: number;
   estoqueMinimo?: number;
   unidadeMedida: string;
+  valorUnitario?: number;
   fornecedoresRelacionados?: string[];
 }
 
@@ -80,10 +82,12 @@ export interface PratoOrcamento {
   tipoVenda: 'Por Unidade' | 'Por Quilo';
   rendimento: number;
   imagemUrl?: string;
+  quantidadeOverride?: number;
 }
 
 export interface Orcamento {
   id: string;
+  numero?: number;
   clienteId: string;
   clienteNome: string;
   nomeEvento?: string;

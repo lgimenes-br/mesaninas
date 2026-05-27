@@ -65,12 +65,12 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
   // KPIs
   const orcamentosPendentes = orcamentos.filter(o => {
     const s = o.status?.toLowerCase();
-    return s === 'rascunho' || s === 'enviado' || s === 'pendente';
+    return !s || s === 'rascunho' || s === 'em aberto' || s === 'enviado' || s === 'pendente';
   }).length;
 
   const eventosConfirmados = orcamentos.filter(o => {
     const s = o.status?.toLowerCase();
-    return s === 'aprovado' || s === 'entregue' || s === 'concluido' || s === 'recusado';
+    return s === 'aprovado' || s === 'entregue' || s === 'concluido';
   });
 
   const receitaConfirmada = eventosConfirmados.reduce((acc, o) => acc + (Number(o.valorVenda) || 0), 0);
@@ -82,7 +82,10 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
 
   // Próximos Eventos
   const proximosEventos = orcamentos
-    .filter(o => o.status?.toLowerCase() === 'enviado' || o.status?.toLowerCase() === 'aprovado' || o.status?.toLowerCase() === 'recusado')
+    .filter(o => {
+      const s = o.status?.toLowerCase();
+      return s === 'enviado' || s === 'aprovado' || s === 'entregue' || s === 'concluido';
+    })
     .sort((a, b) => {
        if (!a.dataEvento) return 1;
        if (!b.dataEvento) return -1;
@@ -106,6 +109,9 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
   const getProjectStatusBadge = (status?: string) => {
      switch (status?.toLowerCase()) {
         case 'rascunho': 
+        case 'em aberto':
+        case undefined:
+        case '':
            return <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-mesaninas-creme/60 text-mesaninas-green uppercase">RASCUNHO</span>;
         case 'enviado': 
            return <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#bce8ea] text-mesaninas-green uppercase">ENVIADO</span>;
@@ -122,8 +128,23 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
 
   const allTransacoes = useMemo(() => {
     const list: Transacao[] = [];
-    orcamentos.forEach(orc => {
-       const dataTransacao = orc.dataEvento || (orc.createdAt ? new Date(orc.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+    orcamentos.filter(o => {
+       const s = o.status?.toLowerCase();
+       return s === 'aprovado' || s === 'entregue' || s === 'concluido';
+    }).forEach(orc => {
+       let fallbackDate = new Date();
+       if (orc.createdAt) {
+         if (typeof (orc.createdAt as any).toDate === 'function') {
+           fallbackDate = (orc.createdAt as any).toDate();
+         } else {
+           fallbackDate = new Date(orc.createdAt as any);
+         }
+       }
+       // Ensure fallbackDate is valid, otherwise use current date to avoid crash
+       if (isNaN(fallbackDate.getTime())) {
+         fallbackDate = new Date();
+       }
+       const dataTransacao = orc.dataEvento || fallbackDate.toISOString().split('T')[0];
        const statusTransacao = orc.statusPagamento === 'Pago' ? 'Pago' : 'Pendente';
        const eventoNome = `Evento: ${orc.clienteNome || ''} ${orc.nomeEvento || ''}`.trim();
 
@@ -171,16 +192,29 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
           });
        }
 
+       // 3.5 Despesa - Materiais (Estoque)
+       const custoExtrasTotal = orc.custosExtras?.reduce((sum, e) => sum + Number(e.valor || 0), 0) || 0;
+       const custoAlimentosTotal = orc.custoAlimentos || 0;
+       // orc.custoTotal correctly contains the sum of Alimentos + Extras + Materiais
+       const custoMateriais = Math.max(0, (orc.custoTotal || 0) - custoAlimentosTotal - custoExtrasTotal);
+       
+       if (custoMateriais > 0) {
+          list.push({
+             id: `orc_desp_mat_${orc.id}`,
+             data: dataTransacao,
+             descricao: `Materiais (Estoque): ${eventoNome}`,
+             categoria: 'Estoque',
+             tipo: 'Despesa',
+             valor: custoMateriais,
+             status: statusTransacao,
+             createdAt: orc.createdAt
+          });
+       }
+
        // 4. Despesa - Impostos
        const currentAliquota = orc.aliquotaNF !== undefined ? orc.aliquotaNF : Number(configGerais?.aliquotaNF || 0);
        if (currentAliquota > 0) {
-          const custoTotal = (orc.custoAlimentos || 0) + (orc.custosExtras?.reduce((sum, e) => sum + Number(e.valor || 0), 0) || 0);
-          const margem = orc.margemLucro !== undefined ? orc.margemLucro : Number(configGerais?.margemLucro || 20);
-          
-          const somaPercentuais = (margem / 100) + (currentAliquota / 100);
-          const fatorDivisor = somaPercentuais < 1 ? (1 - somaPercentuais) : 1;
-          const valorVendaSugerido = custoTotal / fatorDivisor;
-          const valorImposto = valorVendaSugerido * (currentAliquota / 100);
+          const valorImposto = (orc.valorVenda || 0) * (currentAliquota / 100);
 
           if (valorImposto > 0) {
              list.push({
@@ -197,7 +231,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
        }
     });
     return [...transacoes, ...list];
-  }, [orcamentos, transacoes, configGerais]);
+  }, [orcamentos, transacoes, configGerais, estoque]);
 
   // Chart Data
   const getChartData = () => {
@@ -310,20 +344,20 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
     const counts = {
       'Rascunho': 0,
       'Enviado': 0,
-      'Em Negociação': 0,
-      'Aprovado': 0
+      'Aprovado': 0,
+      'Concluído': 0
     };
 
     orcamentos.forEach(o => {
       const s = o.status?.toLowerCase();
-      if (s === 'rascunho') {
+      if (!s || s === 'rascunho' || s === 'em aberto') {
         counts['Rascunho']++;
-      } else if (s === 'enviado') {
+      } else if (s === 'enviado' || s === 'pendente') {
         counts['Enviado']++;
-      } else if (s === 'em negociação' || s === 'em aberto' || s === 'pendente') {
-        counts['Em Negociação']++;
-      } else if (s === 'aprovado' || s === 'entregue' || s === 'concluido' || s === 'recusado') {
+      } else if (s === 'aprovado') {
         counts['Aprovado']++;
+      } else if (s === 'concluido' || s === 'entregue') {
+        counts['Concluído']++;
       }
     });
 
@@ -657,7 +691,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
                 <th className="px-6 py-3 font-semibold text-center w-32">Data</th>
                 <th className="px-6 py-3 font-semibold">Cliente</th>
                 <th className="px-6 py-3 font-semibold">Evento</th>
-                <th className="px-6 py-3 font-semibold text-center w-28">Convidados</th>
+                <th className="px-6 py-3 font-semibold text-center w-36">Convidados</th>
                 <th className="px-6 py-3 font-semibold text-center w-32">Status</th>
               </tr>
             </thead>
