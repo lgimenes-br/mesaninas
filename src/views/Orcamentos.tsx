@@ -328,7 +328,12 @@ export default function Orcamentos() {
     }
 
     setMargemLucro(orcamento.margemLucro !== undefined ? orcamento.margemLucro : 20);
-    setAliquotaNF(orcamento.aliquotaNF !== undefined ? orcamento.aliquotaNF : Number(configGerais?.aliquotaNF || 0));
+    
+    if (orcamento.status === 'Em Aberto' || orcamento.status === 'Rascunho') {
+       setAliquotaNF(Number(configGerais?.aliquotaNF || 0));
+    } else {
+       setAliquotaNF(orcamento.aliquotaNF !== undefined ? orcamento.aliquotaNF : Number(configGerais?.aliquotaNF || 0));
+    }
     
     // Map legacy status if needed to exact kanban column IDs
     const s = orcamento.status as string;

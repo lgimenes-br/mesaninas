@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Settings, Save, Plus, Trash2 } from 'lucide-react';
 import Button from '../components/Button';
@@ -134,6 +134,36 @@ export default function Configuracoes() {
         alertaDespesaDias: Number(alertaDespesaDias) || 2,
         custosCategorias
       }, { merge: true });
+      
+      const novaAliquota = Number(aliquotaNF) || 0;
+      
+      // Update budgets currently in Rascunho ('Em Aberto' and legacy 'Rascunho')
+      const orcamentosRef = collection(db, 'orcamentos');
+      const q = query(orcamentosRef, where('status', 'in', ['Em Aberto', 'Rascunho']));
+      const orcamentosSnap = await getDocs(q);
+      
+      if (!orcamentosSnap.empty) {
+        const batch = writeBatch(db);
+        orcamentosSnap.forEach((orcDoc) => {
+          const orcData = orcDoc.data();
+          const custoAlim = orcData.custoAlimentos || 0;
+          const custosExtras = orcData.custosExtras || [];
+          const totalExtras = custosExtras.reduce((sum: number, ext: any) => sum + (Number(ext.valor) || 0), 0);
+          
+          const custoOpe = custoAlim + totalExtras;
+          const margem = orcData.margemLucro !== undefined ? orcData.margemLucro : 20;
+          
+          const somaPercentuais = (margem / 100) + (novaAliquota / 100);
+          const fatorDivisor = somaPercentuais < 1 ? (1 - somaPercentuais) : 1;
+          const novoValorVenda = custoOpe / fatorDivisor;
+          
+          batch.update(orcDoc.ref, {
+            aliquotaNF: novaAliquota,
+            valorVenda: novoValorVenda
+          });
+        });
+        await batch.commit();
+      }
       
       setSaveMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
       setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
