@@ -85,7 +85,7 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
   return (
     <nav className="sticky top-0 z-50 w-full bg-[#00382b] border-b border-white/10 text-[#f4efdc] shadow-md shrink-0">
       <div className="w-full px-4 md:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           
           {/* LEFT: LOGO */}
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => onNavigate('dashboard')}>
@@ -238,7 +238,7 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
 
       {/* MOBILE MENU DRAWER */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-white/10 bg-[#00382b] flex flex-col px-4 py-3 space-y-1.5 max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="lg:hidden border-t border-white/10 bg-[#00382b] flex flex-col px-4 py-3 space-y-1.5 max-h-[calc(100vh-80px)] overflow-y-auto">
           <div 
             className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'dashboard' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
             onClick={() => { onNavigate('dashboard'); setMobileMenuOpen(false); }}
