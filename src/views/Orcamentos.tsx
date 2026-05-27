@@ -476,11 +476,36 @@ export default function Orcamentos() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao enviar a nota fiscal.');
+        let errorMessage = `Erro do servidor (Status ${response.status})`;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const errorText = await response.text();
+            if (errorText && errorText.trim().startsWith('<')) {
+              errorMessage = `Erro ${response.status}: Página não encontrada (404) ou HTML retornado.`;
+            } else if (errorText && errorText.length < 150) {
+              errorMessage = errorText;
+            }
+          }
+        } catch (_) {
+          // Fallback to initial status string
+        }
+        throw new Error(errorMessage);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Resposta do servidor inválida (Não é JSON).');
       }
 
       const data = await response.json();
+      if (!data || !data.link) {
+        throw new Error('Resposta do servidor não retornou o link do arquivo.');
+      }
+
       setLinkNotaFiscal(data.link);
     } catch (error: any) {
       console.error(error);
@@ -1536,8 +1561,10 @@ export default function Orcamentos() {
                   {linkNotaFiscal ? (
                     <div className="flex flex-col gap-2">
                        <p className="text-sm text-mesaninas-green/80">Nota fiscal já anexada:</p>
-                       <a href={linkNotaFiscal} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-2 px-4 py-2 bg-mesaninas-green text-white text-sm font-semibold rounded hover:bg-mesaninas-green/90 transition-colors">
-                          <FileText className="w-4 h-4" /> Visualizar Nota
+                       <a href={linkNotaFiscal} target="_blank" rel="noreferrer" className="inline-block">
+                          <Button type="button" variant="primary" size="sm">
+                             <FileText className="w-4 h-4" /> Visualizar Nota
+                          </Button>
                        </a>
                     </div>
                   ) : (

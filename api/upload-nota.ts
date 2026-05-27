@@ -1,9 +1,39 @@
-import { Request, Response } from 'express';
 import { google } from 'googleapis';
 import stream from 'stream';
+import multer from 'multer';
 
-export const uploadNotaHandler = async (req: Request, res: Response) => {
+// Disable default body parser of Vercel to allow multer to parse multipart form
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage }).single('notaFiscal');
+
+function runMiddleware(req: any, res: any, fn: any) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
+
+export default async function handler(req: any, res: any) {
+  // Check if it is a POST request
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+  }
+
   try {
+    // Run the multer middleware to parse the file
+    await runMiddleware(req, res, upload);
+
     if (!req.file) {
       return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
     }
@@ -17,19 +47,17 @@ export const uploadNotaHandler = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Configuração do Google Drive ausente no servidor.' });
     }
 
-    const auth = new google.auth.JWT(
-      clientEmail,
-      null,
-      privateKey,
-      ['https://www.googleapis.com/auth/drive.file']
-    );
+    const auth = new google.auth.JWT({
+      email: clientEmail,
+      key: privateKey,
+      scopes: ['https://www.googleapis.com/auth/drive.file']
+    });
 
     const drive = google.drive({ version: 'v3', auth });
 
     const bufferStream = new stream.PassThrough();
     bufferStream.end(req.file.buffer);
 
-    // Upload the file
     const fileMetadata = {
       name: req.file.originalname,
       parents: [folderId],
@@ -43,7 +71,7 @@ export const uploadNotaHandler = async (req: Request, res: Response) => {
     const uploadResponse = await drive.files.create({
       requestBody: fileMetadata,
       media: media,
-      fields: 'id, webViewLink'
+      fields: 'id, webViewLink',
     });
 
     const fileId = uploadResponse.data.id;
@@ -61,13 +89,13 @@ export const uploadNotaHandler = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       link: uploadResponse.data.webViewLink,
       message: 'Upload concluído com sucesso.'
     });
 
-  } catch (error) {
-    console.error('Error uploading to Google Drive:', error);
-    res.status(500).json({ error: 'Erro interno ao realizar upload do arquivo.' });
+  } catch (error: any) {
+    console.error('Error in upload-nota serverless handler:', error);
+    return res.status(500).json({ error: error.message || 'Erro interno ao realizar upload do arquivo.' });
   }
-};
+}
