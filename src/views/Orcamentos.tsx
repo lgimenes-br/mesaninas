@@ -1056,10 +1056,10 @@ export default function Orcamentos() {
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10 bg-white">
-              <div className="w-full max-w-7xl mx-auto space-y-6">
+              <div className="w-full max-w-7xl mx-auto">
               
               {/* Infos Básicas */}
-              <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+              <div className="mb-6 space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Informações do Evento</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1193,7 +1193,7 @@ export default function Orcamentos() {
               </div>
 
               {/* Custom Multi-select Cardápio */}
-              <div className="space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl overflow-visible">
+              <div className="mb-6 space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl overflow-visible">
                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Cardápio (Multi-Select)</h4>
                 
                 <div className="relative" ref={dropdownRef}>
@@ -1311,7 +1311,7 @@ export default function Orcamentos() {
               </div>
               
               {/* Materiais e Insumos de Estoque */}
-              <div className="flex flex-col gap-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
+              <div className="mb-6 flex flex-col gap-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl">
                 <div className="flex justify-between items-center mb-1">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-mesaninas-green/80">Materiais e Insumos de Estoque</h4>
                   <button type="button" onClick={addMaterialEstoque} className="text-xs font-bold bg-mesaninas-creme/50 hover:bg-mesaninas-creme text-mesaninas-green px-3 py-1.5 rounded-md transition-colors">
