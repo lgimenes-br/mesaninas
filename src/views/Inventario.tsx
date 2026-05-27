@@ -3,6 +3,7 @@ import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, order
 import { db } from '../lib/firebase';
 import { Archive, Plus, Search, Pencil, Trash2, AlertCircle } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import Button from '../components/Button';
 
 export interface Equipamento {
   id: string;
@@ -172,12 +173,12 @@ export default function Inventario() {
           <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         </div>
 
-        <button
+        <Button
           onClick={() => handleOpenModal()}
-          className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+          className="shrink-0"
         >
           <span className="text-lg leading-none">+</span> <span>Novo Equipamento</span>
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col">
@@ -363,20 +364,21 @@ export default function Inventario() {
             </div>
             
             <div className="px-6 py-4 border-t border-mesaninas-creme/50 bg-white/50 flex justify-end gap-3 shrink-0">
-              <button
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => { setIsModalOpen(false); resetForm(); }}
-                className="px-6 h-12 lg:h-10 text-mesaninas-green font-bold text-sm bg-transparent hover:bg-black/5 rounded-md transition-colors"
                 disabled={isSubmitting}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting || !nome.trim()}
-                className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {isSubmitting ? 'Salvando...' : 'Salvar Equipamento'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

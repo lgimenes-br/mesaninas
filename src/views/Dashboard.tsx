@@ -6,6 +6,7 @@ import { Users, Clock, CalendarCheck, DollarSign, Plus, AlertTriangle } from 'lu
 import { useAuth } from '../contexts/AuthContext';
 import { ViewType } from '../App';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import Button from '../components/Button';
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType) => void }) {
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
@@ -217,15 +218,15 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
           <p className="text-sm text-mesaninas-green/70 mt-1">Aqui está o resumo estratégico da sua operação.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button onClick={() => onNavigate && onNavigate('orcamentos')} className="bg-mesaninas-green text-mesaninas-yellow px-4 py-2 rounded-md hover:bg-[#002a20] transition-colors font-bold text-sm shadow-sm flex items-center gap-2">
+          <Button onClick={() => onNavigate && onNavigate('orcamentos')}>
             <Plus size={18} /> Novo Orçamento
-          </button>
-          <button onClick={() => onNavigate && onNavigate('financeiro')} className="bg-mesaninas-green text-mesaninas-yellow px-4 py-2 rounded-md hover:bg-[#002a20] transition-colors font-bold text-sm shadow-sm flex items-center gap-2">
+          </Button>
+          <Button onClick={() => onNavigate && onNavigate('financeiro')}>
             <Plus size={18} /> Lançar Despesa
-          </button>
-          <button onClick={() => onNavigate && onNavigate('clientes')} className="bg-mesaninas-green text-mesaninas-yellow px-4 py-2 rounded-md hover:bg-[#002a20] transition-colors font-bold text-sm shadow-sm flex items-center gap-2">
+          </Button>
+          <Button onClick={() => onNavigate && onNavigate('clientes')}>
             <Plus size={18} /> Novo Cliente
-          </button>
+          </Button>
         </div>
       </div>
 
