@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ItemEstoque, Fornecedor } from '../types';
-import { Pencil, Trash2, ChevronDown } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, Search } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
 export default function Estoque() {
@@ -22,6 +22,7 @@ export default function Estoque() {
   const [editingItem, setEditingItem] = useState<ItemEstoque | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const openNewModal = () => {
     setEditingItem(null);
@@ -140,6 +141,10 @@ export default function Estoque() {
     );
   };
 
+  const filteredEstoque = estoque.filter(item => 
+    item.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col h-full relative gap-6">
       {error && (
@@ -149,26 +154,37 @@ export default function Estoque() {
         </div>
       )}
 
-      {/* Main Table Card */}
-      <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden flex flex-col flex-1">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-mesaninas-creme/50 bg-mesaninas-creme/10">
-          <h3 className="font-serif font-bold text-lg text-mesaninas-green">Controle de Estoque</h3>
-          <button
-            onClick={openNewModal}
-            className="px-4 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <span className="text-lg leading-none">+</span> <span>Novo Item</span>
-          </button>
+      {/* Header Actions */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0 w-full">
+        <div className="flex-1 max-w-md relative">
+          <input
+            type="text"
+            placeholder="Buscar item..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 lg:h-10 pl-10 pr-4 bg-white border border-mesaninas-creme rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-green/30"
+          />
+          <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         </div>
 
-        <div className="flex-1 overflow-auto bg-mesaninas-creme/10 lg:bg-transparent">
-        <table className="hidden lg:table w-full text-left border-collapse text-sm">
-          <thead className="bg-mesaninas-creme/50 sticky top-0 border-b border-mesaninas-creme/50 z-10 shadow-sm">
-            <tr>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Item</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Unidade</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Qtd Disponível</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Ações</th>
+        <button
+          onClick={openNewModal}
+          className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+        >
+          <span className="text-lg leading-none">+</span> <span>Novo Item</span>
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col">
+         <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm flex-1 w-full flex flex-col overflow-hidden">
+            <div className="overflow-x-auto">
+               <table className="w-full text-left border-collapse min-w-[700px]">
+          <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10 shadow-sm">
+            <tr className="border-b border-[#f4efdc]/50">
+              <th className="px-6 py-3 font-semibold">Item</th>
+              <th className="px-6 py-3 font-semibold text-center">Unidade</th>
+              <th className="px-6 py-3 font-semibold text-right">Qtd Disponível</th>
+              <th className="px-6 py-3 font-semibold text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-mesaninas-creme/50">
@@ -176,13 +192,15 @@ export default function Estoque() {
               <tr>
                 <td colSpan={4} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Carregando dados...</td>
               </tr>
-            ) : estoque.length === 0 ? (
+            ) : filteredEstoque.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum item cadastrado.</td>
+                <td colSpan={4} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">
+                  {searchTerm ? 'Nenhum item encontrado para a busca.' : 'Nenhum item cadastrado.'}
+                </td>
               </tr>
             ) : (
-              estoque.map((item) => (
-                <tr key={item.id} className="hover:bg-mesaninas-creme/30 group">
+              filteredEstoque.map((item) => (
+                <tr key={item.id} className="hover:bg-mesaninas-creme/30 group border-b border-mesaninas-creme/30">
                   <td className="px-6 py-4 font-medium text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">
                     {item.nome}
                   </td>
@@ -217,10 +235,11 @@ export default function Estoque() {
             )}
           </tbody>
         </table>
+      </div>
 
-        {/* MOBILE CARDS */}
-        <div className="lg:hidden flex flex-col p-4 gap-4">
-            {loading ? (
+      {/* MOBILE CARDS border removed to fit the new design structure */}
+      <div className="lg:hidden flex flex-col p-4 gap-4 bg-mesaninas-creme/5">
+        {loading ? (
               <div className="text-center text-mesaninas-green/50 text-sm py-8">Carregando dados...</div>
             ) : estoque.length === 0 ? (
               <div className="text-center text-mesaninas-green/50 text-sm py-8">Nenhum item encontrado.</div>

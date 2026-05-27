@@ -293,7 +293,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
         <div className="lg:w-[30%] flex flex-col">
            <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm p-5 flex flex-col h-full min-h-[400px]">
              <h3 className="font-serif font-bold text-lg text-mesaninas-green mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-[#c2410c]" /> Atenção Necessária
+                <AlertTriangle className="w-5 h-5 text-[#c2410c]" /> Avisos
              </h3>
              <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-1">
                 {alertas.length === 0 ? (

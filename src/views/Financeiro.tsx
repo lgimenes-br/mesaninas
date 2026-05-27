@@ -333,15 +333,15 @@ export default function Financeiro() {
 
            <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="bg-mesaninas-creme/20 border-b border-mesaninas-creme/50 text-[10px] uppercase tracking-wider text-mesaninas-green/60 font-semibold">
-                    <th className="px-6 py-4 whitespace-nowrap">Data</th>
-                    <th className="px-6 py-4">Descrição</th>
-                    <th className="px-6 py-4">Categoria</th>
-                    <th className="px-6 py-4 text-center">Tipo</th>
-                    <th className="px-6 py-4 text-right">Valor (R$)</th>
-                    <th className="px-6 py-4 text-center">Status</th>
-                    <th className="px-6 py-4 text-center">Ações</th>
+                <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60">
+                  <tr className="border-b border-[#f4efdc]/50">
+                    <th className="px-6 py-3 font-semibold whitespace-nowrap">Data</th>
+                    <th className="px-6 py-3 font-semibold">Descrição</th>
+                    <th className="px-6 py-3 font-semibold">Categoria</th>
+                    <th className="px-6 py-3 font-semibold text-center">Tipo</th>
+                    <th className="px-6 py-3 font-semibold text-right">Valor (R$)</th>
+                    <th className="px-6 py-3 font-semibold text-center">Status</th>
+                    <th className="px-6 py-3 font-semibold text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-mesaninas-creme/40">

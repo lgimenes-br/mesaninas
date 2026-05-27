@@ -184,14 +184,14 @@ export default function Inventario() {
          <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm flex-1 w-full flex flex-col overflow-hidden">
             <div className="overflow-x-auto">
                <table className="w-full text-left border-collapse min-w-[700px]">
-                 <thead>
-                   <tr className="bg-[#f2eede] text-mesaninas-green font-bold text-xs uppercase tracking-wider border-b border-mesaninas-creme/60">
-                     <th className="px-6 py-4 rounded-tl-xl w-[30%]">Nome do Equipamento</th>
-                     <th className="px-6 py-4 w-[15%]">Categoria</th>
-                     <th className="px-6 py-4 text-center w-[15%]">Quantidade Total</th>
-                     <th className="px-6 py-4 text-center w-[15%]">Disponível<span className="block text-[9px] font-normal opacity-70 normal-case">(No Galpão)</span></th>
-                     <th className="px-6 py-4 text-center w-[15%]">Status</th>
-                     <th className="px-6 py-4 rounded-tr-xl text-center w-[10%]">Manejos</th>
+                 <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10">
+                   <tr className="border-b border-[#f4efdc]/50">
+                     <th className="px-6 py-3 font-semibold rounded-tl-xl w-[30%]">Nome do Equipamento</th>
+                     <th className="px-6 py-3 font-semibold w-[15%]">Categoria</th>
+                     <th className="px-6 py-3 font-semibold text-center w-[15%]">Quantidade Total</th>
+                     <th className="px-6 py-3 font-semibold text-center w-[15%]">Disponível</th>
+                     <th className="px-6 py-3 font-semibold text-center w-[15%]">Status</th>
+                     <th className="px-6 py-3 font-semibold rounded-tr-xl text-center w-[10%]">Manejos</th>
                    </tr>
                  </thead>
                  <tbody className="text-sm">

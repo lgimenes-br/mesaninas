@@ -634,14 +634,14 @@ export default function Orcamentos() {
         
         {/* View Mode Pill Switcher */}
         <div className="flex-1 flex items-center justify-start">
-          <div className="flex items-center bg-[#f2eede]/60 rounded-md border border-mesaninas-creme/60 max-w-max shadow-sm relative h-12 lg:h-10">
+          <div className="flex items-center bg-white rounded-md border border-mesaninas-creme/60 max-w-max shadow-sm relative h-12 lg:h-10">
             <button
               type="button"
               onClick={() => setViewMode('list')}
               className={`relative z-10 px-6 h-full flex items-center justify-center text-xs font-bold rounded-md transition-all duration-300 ${
                 viewMode === 'list'
                   ? 'bg-mesaninas-green text-mesaninas-creme shadow-sm'
-                  : 'text-mesaninas-green hover:bg-[#00382b]/5'
+                  : 'bg-white text-mesaninas-green hover:bg-[#00382b]/5'
               }`}
             >
               Visualização em Lista
@@ -652,7 +652,7 @@ export default function Orcamentos() {
               className={`relative z-10 px-6 h-full flex items-center justify-center text-xs font-bold rounded-md transition-all duration-300 ${
                 viewMode === 'kanban'
                   ? 'bg-mesaninas-green text-mesaninas-creme shadow-sm'
-                  : 'text-mesaninas-green hover:bg-[#00382b]/5'
+                  : 'bg-white text-mesaninas-green hover:bg-[#00382b]/5'
               }`}
             >
               Funil de Vendas (Kanban)
@@ -674,16 +674,16 @@ export default function Orcamentos() {
              <div className="flex-1 w-full bg-mesaninas-creme/5 overflow-auto">
                {/* DESKTOP TABLE */}
                <table className="hidden lg:table w-full text-left border-collapse text-sm">
-                 <thead className="bg-mesaninas-creme/50 sticky top-0 border-b border-mesaninas-creme/50 z-10 shadow-sm">
-                   <tr>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Cliente / Evento</th>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Data</th>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Convidados</th>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Valor Venda</th>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Status</th>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Pagamento</th>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center w-24">Auditoria</th>
-                     <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Ações</th>
+                 <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10 shadow-sm">
+                   <tr className="border-b border-[#f4efdc]/50">
+                     <th className="px-6 py-3 font-semibold">Cliente / Evento</th>
+                     <th className="px-6 py-3 font-semibold text-center">Data</th>
+                     <th className="px-6 py-3 font-semibold text-center">Convidados</th>
+                     <th className="px-6 py-3 font-semibold text-right">Valor Venda</th>
+                     <th className="px-6 py-3 font-semibold text-center">Status</th>
+                     <th className="px-6 py-3 font-semibold text-center">Pagamento</th>
+                     <th className="px-6 py-3 font-semibold text-center w-24">Auditoria</th>
+                     <th className="px-6 py-3 font-semibold text-right">Ações</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-mesaninas-creme/50">

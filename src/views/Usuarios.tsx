@@ -3,7 +3,7 @@ import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from 'fireb
 import { db, auth } from '../lib/firebase';
 import { Usuario } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldCheck, Pencil, UserCheck, X, Camera, Trash2 } from 'lucide-react';
+import { ShieldCheck, Pencil, UserCheck, X, Camera, Trash2, Search } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
 export default function Usuarios() {
@@ -24,6 +24,7 @@ export default function Usuarios() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const requestDelete = (uid: string) => {
     setDeleteConfirmId(uid);
@@ -227,38 +228,57 @@ export default function Usuarios() {
     );
   }
 
+  const filteredUsuarios = usuarios.filter(u => 
+    u.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col h-full relative gap-6">
-      {/* Main Table Card */}
-      <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden flex flex-col flex-1">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-mesaninas-creme/50 bg-mesaninas-creme/10">
-          <h3 className="font-serif font-bold text-lg text-mesaninas-green">Controle de Usuários</h3>
-          <button
-            onClick={openNewModal}
-            className="px-4 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <span className="text-lg leading-none">+</span> <span>Novo Usuário</span>
-          </button>
+      {/* Header Actions */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0 w-full">
+        <div className="flex-1 max-w-md relative">
+          <input
+            type="text"
+            placeholder="Buscar usuário..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 lg:h-10 pl-10 pr-4 bg-white border border-mesaninas-creme rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-green/30"
+          />
+          <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         </div>
-        <div className="flex-1 overflow-auto bg-mesaninas-creme/10 lg:bg-transparent">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-mesaninas-creme/30 sticky top-0 z-10 backdrop-blur-sm">
-            <tr>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Nome</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">E-mail</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Conexão</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Perfil</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Status</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Ações</th>
+
+        <button
+          onClick={openNewModal}
+          className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+        >
+          <span className="text-lg leading-none">+</span> <span>Novo Usuário</span>
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col">
+         <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm flex-1 w-full flex flex-col overflow-hidden">
+            <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[700px]">
+          <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10">
+            <tr className="border-b border-[#f4efdc]/50">
+              <th className="px-6 py-3 font-semibold">Nome</th>
+              <th className="px-6 py-3 font-semibold">E-mail</th>
+              <th className="px-6 py-3 font-semibold text-center">Conexão</th>
+              <th className="px-6 py-3 font-semibold text-center">Perfil</th>
+              <th className="px-6 py-3 font-semibold text-center">Status</th>
+              <th className="px-6 py-3 font-semibold text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-mesaninas-creme/50">
-            {usuarios.length === 0 ? (
+            {filteredUsuarios.length === 0 ? (
                <tr>
-                 <td colSpan={6} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">Nenhum usuário cadastrado.</td>
+                 <td colSpan={6} className="px-6 py-12 text-center text-mesaninas-green/50 text-sm">
+                   {searchTerm ? 'Nenhum usuário encontrado para a busca.' : 'Nenhum usuário cadastrado.'}
+                 </td>
                </tr>
             ) : (
-              usuarios.map((user) => (
+              filteredUsuarios.map((user) => (
                 <tr key={user.uid} className="hover:bg-white/50 transition-colors group">
                   <td className="px-6 py-4 font-medium text-mesaninas-green">{user.nome}</td>
                   <td className="px-6 py-4 text-mesaninas-green/70 text-sm">{user.email}</td>
@@ -305,6 +325,7 @@ export default function Usuarios() {
             )}
           </tbody>
         </table>
+      </div>
       </div>
       </div>
 

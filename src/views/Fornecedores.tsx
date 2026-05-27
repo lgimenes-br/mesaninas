@@ -514,48 +514,41 @@ export default function Fornecedores() {
         </div>
       )}
 
-      {/* Main Table Card */}
-      <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden flex flex-col flex-1">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between px-6 py-4 border-b border-mesaninas-creme/50 bg-mesaninas-creme/10 gap-4 lg:gap-0">
-          <h3 className="font-serif font-bold text-lg text-mesaninas-green">Nossos Fornecedores</h3>
-          <div className="flex items-center gap-2 lg:gap-4 w-full lg:w-auto">
-            <div className="relative flex-1 lg:flex-initial">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mesaninas-green/50"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Buscar fornecedor..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 h-12 lg:h-10 w-full lg:w-64 text-sm bg-white border border-mesaninas-creme rounded-md focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow placeholder:text-mesaninas-green/40"
-              />
-            </div>
-            <button
-              onClick={openNewModal}
-              className="px-4 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
-            >
-              <span className="text-lg leading-none">+</span> <span>Novo Forn.</span>
-            </button>
-          </div>
+      {/* Header Actions */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0 w-full">
+        <div className="flex-1 max-w-md relative">
+          <input
+            type="text"
+            placeholder="Buscar fornecedor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 lg:h-10 pl-10 pr-4 bg-white border border-mesaninas-creme rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-green/30"
+          />
+          <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
 
-        <div className="flex-1 overflow-auto bg-mesaninas-creme/10 lg:bg-transparent">
+        <button
+          onClick={openNewModal}
+          className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme transition-colors text-sm font-bold rounded-md shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+        >
+          <span className="text-lg leading-none">+</span> <span>Novo Fornecedor</span>
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col">
+         <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm flex-1 w-full flex flex-col overflow-hidden">
+            <div className="overflow-x-auto">
         {/* DESKTOP TABLE */}
-        <table className="hidden lg:table w-full text-left border-collapse text-sm">
-          <thead className="bg-mesaninas-creme/50 sticky top-0 border-b border-mesaninas-creme/50 z-10 shadow-sm">
-            <tr>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Nome / Razão Social</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider">Contato</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Responsável</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-center">Cadastro</th>
-              <th className="px-6 py-3 text-[11px] uppercase font-bold text-mesaninas-green/60 tracking-wider text-right">Ações</th>
+        <table className="hidden lg:table w-full text-left border-collapse min-w-[700px] text-sm">
+          <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10 shadow-sm">
+            <tr className="border-b border-[#f4efdc]/50">
+              <th className="px-6 py-3 font-semibold">Nome / Razão Social</th>
+              <th className="px-6 py-3 font-semibold">Contato</th>
+              <th className="px-6 py-3 font-semibold text-center">Responsável</th>
+              <th className="px-6 py-3 font-semibold text-center">Cadastro</th>
+              <th className="px-6 py-3 font-semibold text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-mesaninas-creme/50">
@@ -609,9 +602,10 @@ export default function Fornecedores() {
             )}
           </tbody>
         </table>
+       </div>
 
-        {/* MOBILE CARDS */}
-        <div className="lg:hidden flex flex-col p-4 gap-4">
+        {/* MOBILE CARDS border removed to fit the new design structure */}
+        <div className="lg:hidden flex flex-col p-4 gap-4 bg-mesaninas-creme/5">
             {loading ? (
               <div className="text-center text-mesaninas-green/50 text-sm py-8">Carregando dados...</div>
             ) : filteredFornecedores.length === 0 ? (
