@@ -260,7 +260,7 @@ export default function Usuarios() {
          <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm flex-1 w-full flex flex-col overflow-hidden">
             <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[700px]">
-          <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10">
+          <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10 shadow-sm">
             <tr className="border-b border-[#f4efdc]/50">
               <th className="px-6 py-3 font-semibold">Nome</th>
               <th className="px-6 py-3 font-semibold">E-mail</th>
