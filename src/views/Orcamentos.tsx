@@ -644,9 +644,9 @@ export default function Orcamentos() {
           status: status,
           statusPagamento: statusPagamento,
           imagemUrl: imagemUrl,
-          linkNotaFiscal: linkNotaFiscal,
+          linkNotaFiscal: linkNotaFiscal || '',
           materiaisEstoque: materiaisEstoque.map(m => ({ materialId: m.materialId, nome: m.nome, quantidade: Number(m.quantidade) || 0 })),
-          ultimoEditor: userProfile?.nome || undefined,
+          ultimoEditor: userProfile?.nome || '',
         };
 
         let willBeBaixado = status === 'Aprovado' || status === 'Entregue';
