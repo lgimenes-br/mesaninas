@@ -259,17 +259,17 @@ export default function Pratos() {
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4">
-                     <div className="font-medium text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">{prato.nome}</div>
-                     <div className="text-[10px] text-mesaninas-green/60 mt-1 uppercase tracking-wider font-bold">Serve {prato.rendimento || 1} pessoas</div>
+                  <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green">
+                     <div className="group-hover:text-mesaninas-green/80 transition-colors">{prato.nome}</div>
+                     <div className="text-[10px] text-mesaninas-green/60 mt-1 normal-case tracking-normal font-normal">Serve {prato.rendimento || 1} pessoas</div>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[11px] font-bold">
-                      {prato.tipoVenda}
+                    <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                      {prato.tipoVenda?.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center text-mesaninas-green/80 text-sm">
-                    {prato.fornecedoresCustos?.length || 0} fornecedor(es)
+                  <td className="px-6 py-4 text-center text-mesaninas-green/80 text-[10px] font-bold uppercase tracking-wider">
+                    {prato.fornecedoresCustos?.length || 0} FORNECEDOR(ES)
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -326,11 +326,11 @@ export default function Pratos() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[11px] font-bold">
-                      {prato.tipoVenda}
+                    <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                      {prato.tipoVenda?.toUpperCase()}
                     </span>
-                    <span className="text-mesaninas-green/80 font-bold text-xs uppercase">
-                      {prato.fornecedoresCustos?.length || 0} fornecedor(es)
+                    <span className="text-mesaninas-green/80 font-bold text-[10px] uppercase tracking-wider">
+                      {prato.fornecedoresCustos?.length || 0} FORNECEDOR(ES)
                     </span>
                   </div>
                 </div>
@@ -455,7 +455,7 @@ export default function Pratos() {
                                   >
                                     <option value="">Selecione o Fornecedor...</option>
                                     {fornecedores.map(f => (
-                                      <option key={f.id} value={f.id}>{f.nome}</option>
+                                      <option key={f.id} value={f.id}>{f.nome?.toUpperCase()}</option>
                                     ))}
                                   </select>
                                   <input

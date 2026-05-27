@@ -119,3 +119,15 @@ export interface Transacao {
   createdAt?: string;
 }
 
+export interface CustoOperacionalCategoria {
+  id: string;
+  nome: string;
+}
+
+export interface CustoLancado {
+  idCategoria: string;
+  valor: number;
+  observacao?: string;
+}
+
+

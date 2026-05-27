@@ -586,9 +586,9 @@ export default function Clientes() {
               ) : (
                 filteredClientes.map((cliente) => (
                   <tr key={cliente.id} className="hover:bg-mesaninas-creme/30 group">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-mesaninas-green">{cliente.nome}</div>
-                      <div className="text-xs text-mesaninas-green/60 mt-0.5">{cliente.cpf_cnpj}</div>
+                    <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green">
+                      <div>{cliente.nome}</div>
+                      <div className="text-[10px] text-mesaninas-green/60 mt-0.5 normal-case tracking-normal font-normal">{cliente.cpf_cnpj}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-mesaninas-green font-medium">{cliente.telefone}</div>
@@ -600,7 +600,7 @@ export default function Clientes() {
                           ? 'bg-mesaninas-blue/50 text-mesaninas-green'
                           : 'bg-mesaninas-yellow/50 text-mesaninas-green'
                       }`}>
-                        {cliente.tipo || 'Desconhecido'}
+                        {(cliente.tipo || 'Desconhecido').toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center text-mesaninas-green/70 text-xs">
@@ -642,15 +642,15 @@ export default function Clientes() {
                   <div key={cliente.id} className="bg-white border border-mesaninas-creme/70 rounded-xl p-4 shadow-sm flex flex-col gap-4">
                     <div className="flex justify-between items-start gap-4">
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold text-mesaninas-green text-base leading-tight truncate">{cliente.nome}</div>
-                        <div className="text-sm text-mesaninas-green/60 mt-1">{cliente.cpf_cnpj}</div>
+                        <div className="font-bold text-mesaninas-green text-xs uppercase tracking-wider leading-tight truncate">{cliente.nome}</div>
+                        <div className="text-[10px] text-mesaninas-green/60 mt-0.5 normal-case tracking-normal font-normal">{cliente.cpf_cnpj}</div>
                       </div>
                       <span className={`px-2.5 py-1 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                         cliente.tipo === 'Corporativo'
                           ? 'bg-mesaninas-blue/50 text-mesaninas-green'
                           : 'bg-mesaninas-yellow/50 text-mesaninas-green'
                       }`}>
-                        {cliente.tipo || 'Desconhecido'}
+                        {(cliente.tipo || 'Desconhecido').toUpperCase()}
                       </span>
                     </div>
                     

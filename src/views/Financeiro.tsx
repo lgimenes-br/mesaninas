@@ -355,13 +355,13 @@ export default function Financeiro() {
                     allTransacoes.map((t) => (
                       <tr key={t.id} className="hover:bg-mesaninas-creme/20 transition-colors group">
                         <td className="px-6 py-4 whitespace-nowrap text-mesaninas-green/80">{formatDate(t.data)}</td>
-                        <td className="px-6 py-4 font-medium max-w-[200px] truncate" title={t.descricao}>
-                           {t.descricao}
+                        <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green max-w-[200px] truncate" title={t.descricao}>
+                           <span className="group-hover:text-mesaninas-green/80 transition-colors">{t.descricao}</span>
                            {t.id.startsWith('orc_') && (
-                             <span className="ml-2 inline-block px-1.5 py-0.5 bg-mesaninas-creme rounded text-[9px] uppercase tracking-wider text-mesaninas-green/60">Automático</span>
+                             <span className="ml-2 inline-block px-1.5 py-0.5 bg-mesaninas-creme rounded text-[9px] uppercase tracking-wider text-mesaninas-green/60 tracking-normal normal-case font-normal">Automático</span>
                            )}
                         </td>
-                        <td className="px-6 py-4 text-mesaninas-green/80 whitespace-nowrap">{t.categoria}</td>
+                        <td className="px-6 py-4 text-mesaninas-green/80 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider">{t.categoria?.toUpperCase()}</td>
                         <td className="px-6 py-4 text-center">
                            {t.tipo === 'Receita' ? (
                              <span className="inline-flex p-1 bg-green-100 text-green-600 rounded-md" title="Receita">

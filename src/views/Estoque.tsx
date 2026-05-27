@@ -201,15 +201,15 @@ export default function Estoque() {
             ) : (
               filteredEstoque.map((item) => (
                 <tr key={item.id} className="hover:bg-mesaninas-creme/30 group border-b border-mesaninas-creme/30">
-                  <td className="px-6 py-4 font-medium text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">
+                  <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">
                     {item.nome}
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[11px] font-bold">
-                      {item.unidadeMedida}
+                    <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                      {item.unidadeMedida?.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right text-mesaninas-green">
+                  <td className="px-6 py-4 text-right font-bold text-xs text-mesaninas-green">
                     {item.quantidade}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -247,7 +247,7 @@ export default function Estoque() {
               estoque.map((item) => (
                 <div key={item.id} className="bg-white border border-mesaninas-creme/70 rounded-xl p-4 shadow-sm flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-4">
-                    <div className="font-bold text-mesaninas-green text-base leading-tight">{item.nome}</div>
+                    <div className="font-bold text-mesaninas-green text-xs uppercase tracking-wider leading-tight">{item.nome}</div>
                     <div className="flex items-center gap-1">
                        <button onClick={() => openEditModal(item)} className="p-1.5 text-mesaninas-green/50 hover:text-[#e7e873]">
                          <Pencil className="w-4 h-4" />
@@ -258,10 +258,10 @@ export default function Estoque() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-2">
-                     <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[11px] font-bold">
-                        {item.unidadeMedida}
+                     <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                        {item.unidadeMedida?.toUpperCase()}
                      </span>
-                     <span className="text-mesaninas-green font-bold text-lg">{item.quantidade}</span>
+                     <span className="text-mesaninas-green font-bold text-xs">{item.quantidade}</span>
                   </div>
                 </div>
               ))

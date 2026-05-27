@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Orcamento, Prato, Cliente } from '../types';
+import { Orcamento, Prato, Cliente, CustoOperacionalCategoria, ItemEstoque } from '../types';
 import { ChevronDown, Check, Pencil, Trash2 } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import { useAuth } from '../contexts/AuthContext';
+import Button from '../components/Button';
+
+const defaultCostCategories: CustoOperacionalCategoria[] = [
+  { id: 'combustivel', nome: 'Combustível' },
+  { id: 'pedagio', nome: 'Pedágio' },
+  { id: 'ajudantes', nome: 'Ajudantes / Diárias' },
+  { id: 'equipamentos', nome: 'Aluguel de Equipamento' },
+  { id: 'logistica', nome: 'Logística / Frete' }
+];
 
 const formatCurrencyInput = (value: string | number) => {
   if (value === undefined || value === null) return '';
@@ -699,8 +708,8 @@ export default function Orcamentos() {
                      orcamentos.map((orc) => (
                        <tr key={orc.id} className="hover:bg-mesaninas-creme/30 group">
                          <td className="px-6 py-4">
-                            <div className="font-medium text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">{orc.clienteNome}</div>
-                            <div className="text-xs text-mesaninas-green/60 mt-1 line-clamp-1 max-w-sm">
+                            <div className="font-bold uppercase tracking-wider text-xs text-mesaninas-green group-hover:text-mesaninas-green/80 transition-colors">{orc.clienteNome}</div>
+                            <div className="text-[10px] text-mesaninas-green/60 mt-1 line-clamp-1 max-w-sm normal-case tracking-normal font-normal">
                                {orc.nomeEvento || 'Evento não nomeado'}
                             </div>
                          </td>
@@ -1205,7 +1214,7 @@ export default function Orcamentos() {
                                   <option value="" disabled>Escolha um fornecedor...</option>
                                   {pratoRef.fornecedoresCustos.map(fc => (
                                     <option key={fc.fornecedorId} value={fc.fornecedorId}>
-                                      {fc.nome} - R$ {fc.custo.toFixed(2)}
+                                      {fc.nome?.toUpperCase()} - R$ {fc.custo.toFixed(2)}
                                     </option>
                                   ))}
                                 </select>
@@ -1273,31 +1282,48 @@ export default function Orcamentos() {
                  <div className="flex flex-col gap-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl h-full">
                     <div>
                        <h4 className="text-xs font-bold uppercase tracking-wider text-mesaninas-green/80 mb-3 block">Custos Operacionais e Logística</h4>
-                       {custosExtras.map((item, index) => (
-                          <div key={index} className="flex gap-2 items-center mb-2">
-                              <input 
-                                type="text" 
-                                value={item.descricao} 
-                                onChange={(e) => updateCustoExtraDesc(index, e.target.value)} 
-                                className="flex-1 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
-                                placeholder="Descrição (Ex: Gasolina)" 
-                              />
-                              <input 
-                                type="text" 
-                                inputMode="numeric"
-                                value={item.valor} 
-                                onChange={(e) => updateCustoExtraValor(index, e.target.value)} 
-                                className="w-28 sm:w-32 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
-                                placeholder="R$ 0,00" 
-                              />
-                              <button type="button" onClick={() => removeCustoExtra(index)} className="p-2 text-mesaninas-green/50 hover:text-red-500 transition-colors shrink-0">
-                                 <Trash2 className="w-5 h-5 lg:w-4 lg:h-4" />
-                              </button>
-                          </div>
-                       ))}
-                       <button type="button" onClick={addCustoExtra} className="mt-2 text-xs font-bold text-mesaninas-green bg-white border border-mesaninas-creme/50 hover:bg-mesaninas-creme/60 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1">
-                          + Adicionar Custo Extra
-                       </button>
+                       {(() => {
+                         const custosCategorias = configGerais?.custosCategorias || defaultCostCategories;
+                         return custosExtras.map((item, index) => (
+                            <div key={index} className="flex gap-2 items-center mb-2">
+                                <select 
+                                  value={item.descricao} 
+                                  onChange={(e) => updateCustoExtraDesc(index, e.target.value)} 
+                                  className="flex-1 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
+                                >
+                                  <option value="">Selecione categoria...</option>
+                                  {custosCategorias.map(cat => (
+                                    <option key={cat.id} value={cat.nome}>
+                                      {cat.nome}
+                                    </option>
+                                  ))}
+                                  {item.descricao && !custosCategorias.some((c: any) => c.nome === item.descricao) && (
+                                    <option value={item.descricao}>{item.descricao}</option>
+                                  )}
+                                </select>
+                                <input 
+                                  type="text" 
+                                  inputMode="numeric"
+                                  value={item.valor} 
+                                  onChange={(e) => updateCustoExtraValor(index, e.target.value)} 
+                                  className="w-28 sm:w-32 px-3 h-12 lg:h-10 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green" 
+                                  placeholder="R$ 0,00" 
+                                />
+                                <button type="button" onClick={() => removeCustoExtra(index)} className="p-2 text-mesaninas-green/50 hover:text-red-500 transition-colors shrink-0">
+                                   <Trash2 className="w-5 h-5 lg:w-4 lg:h-4" />
+                                </button>
+                            </div>
+                         ));
+                       })()}
+                       <Button 
+                         type="button" 
+                         onClick={addCustoExtra} 
+                         variant="outline"
+                         size="sm"
+                         className="mt-2 h-9 text-xs"
+                       >
+                         + Adicionar Custo Extra
+                       </Button>
                     </div>
                     
                     <div className="pt-4 border-t border-mesaninas-creme/50 mt-auto">

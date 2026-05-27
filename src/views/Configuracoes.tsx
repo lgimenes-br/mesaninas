@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Settings, Save } from 'lucide-react';
+import { Settings, Save, Plus, Trash2 } from 'lucide-react';
+import Button from '../components/Button';
+import { CustoOperacionalCategoria } from '../types';
 
 export default function Configuracoes() {
   const [nomeFantasia, setNomeFantasia] = useState('');
@@ -19,6 +21,9 @@ export default function Configuracoes() {
   
   const [alertaOrcamentoDias, setAlertaOrcamentoDias] = useState<number | ''>('');
   const [alertaDespesaDias, setAlertaDespesaDias] = useState<number | ''>('');
+
+  const [custosCategorias, setCustosCategorias] = useState<CustoOperacionalCategoria[]>([]);
+  const [novaCategoria, setNovaCategoria] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +45,23 @@ export default function Configuracoes() {
         setRegrasQuebra(data.regrasQuebra || '');
         setAlertaOrcamentoDias(data.alertaOrcamentoDias !== undefined ? data.alertaOrcamentoDias : 5);
         setAlertaDespesaDias(data.alertaDespesaDias !== undefined ? data.alertaDespesaDias : 2);
+        
+        const cats = data.custosCategorias || [
+          { id: 'combustivel', nome: 'Combustível' },
+          { id: 'pedagio', nome: 'Pedágio' },
+          { id: 'ajudantes', nome: 'Ajudantes / Diárias' },
+          { id: 'equipamentos', nome: 'Aluguel de Equipamento' },
+          { id: 'logistica', nome: 'Logística / Frete' }
+        ];
+        setCustosCategorias(cats);
+      } else {
+        setCustosCategorias([
+          { id: 'combustivel', nome: 'Combustível' },
+          { id: 'pedagio', nome: 'Pedágio' },
+          { id: 'ajudantes', nome: 'Ajudantes / Diárias' },
+          { id: 'equipamentos', nome: 'Aluguel de Equipamento' },
+          { id: 'logistica', nome: 'Logística / Frete' }
+        ]);
       }
       setIsLoading(false);
     });
@@ -72,6 +94,27 @@ export default function Configuracoes() {
     setTelefone(value);
   };
 
+  const handleAddCategoria = () => {
+    if (!novaCategoria.trim()) return;
+    const cleanNome = novaCategoria.trim();
+    if (custosCategorias.some(c => c.nome.toLowerCase() === cleanNome.toLowerCase())) {
+      setSaveMessage({ type: 'error', text: 'Esta categoria já existe.' });
+      setTimeout(() => setSaveMessage({ type: '', text: '' }), 3000);
+      return;
+    }
+    const id = cleanNome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
+    const newCategory: CustoOperacionalCategoria = {
+      id: `${id}-${Date.now()}`,
+      nome: cleanNome
+    };
+    setCustosCategorias([...custosCategorias, newCategory]);
+    setNovaCategoria('');
+  };
+
+  const handleRemoveCategoria = (id: string) => {
+    setCustosCategorias(custosCategorias.filter(c => c.id !== id));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setSaveMessage({ type: '', text: '' });
@@ -88,7 +131,8 @@ export default function Configuracoes() {
         politicasCancelamento,
         regrasQuebra,
         alertaOrcamentoDias: Number(alertaOrcamentoDias) || 5,
-        alertaDespesaDias: Number(alertaDespesaDias) || 2
+        alertaDespesaDias: Number(alertaDespesaDias) || 2,
+        custosCategorias
       }, { merge: true });
       
       setSaveMessage({ type: 'success', text: 'Configurações salvas com sucesso!' });
@@ -207,16 +251,63 @@ export default function Configuracoes() {
           </div>
         </section>
 
+        {/* CARD 5: Categorias de Custos Operacionais */}
+        <section className="bg-white border border-mesaninas-creme rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 bg-mesaninas-creme/20 border-b border-mesaninas-creme font-serif font-bold text-lg text-mesaninas-green">
+            Categorias de Custos Operacionais
+          </div>
+          <div className="p-6">
+            <p className="text-xs text-mesaninas-green/70 mb-4">
+              Defina as categorias para o lançamento de custos operacionais (combustível, pedágio, ajudantes, etc.) na elaboração dos orçamentos.
+            </p>
+            <div className="flex gap-2 max-w-md mb-6">
+              <input
+                type="text"
+                placeholder="Ex: Diárias, Vans, Decoração, etc."
+                value={novaCategoria}
+                onChange={e => setNovaCategoria(e.target.value)}
+                className="flex-1 h-12 lg:h-10 px-3 bg-white border border-mesaninas-creme rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-mesaninas-yellow/50 focus:border-mesaninas-yellow text-mesaninas-green"
+              />
+              <Button type="button" onClick={handleAddCategoria} variant="primary" size="sm">
+                <Plus size={16} /> Adicionar
+              </Button>
+            </div>
+
+            <div className="divide-y divide-mesaninas-creme/30 max-w-md border border-mesaninas-creme rounded-lg overflow-hidden bg-white shadow-sm">
+              {custosCategorias.length === 0 ? (
+                <div className="px-4 py-4 text-sm text-mesaninas-green/50 text-center">
+                  Nenhuma categoria cadastrada.
+                </div>
+              ) : (
+                custosCategorias.map((cat) => (
+                  <div key={cat.id} className="px-4 py-3 flex justify-between items-center hover:bg-mesaninas-creme/5 transition-colors">
+                    <span className="text-sm font-semibold text-mesaninas-green">{cat.nome}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveCategoria(cat.id)}
+                      className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-3"
+                    >
+                      <Trash2 size={13} /> Excluir
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+
         {/* Botão de Salvar no final */}
         <div className="flex justify-end mt-4">
-          <button 
+          <Button 
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-3 text-sm font-bold bg-mesaninas-green text-mesaninas-creme rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 shadow-sm"
+            variant="primary"
           >
             <Save size={18} />
             {isSaving ? 'Salvando...' : 'Salvar Configurações'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

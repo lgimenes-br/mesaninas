@@ -341,15 +341,15 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
                          {formatDate(orc.dataEvento)}
                        </td>
                        <td className="px-6 py-4">
-                         <div className="font-bold text-mesaninas-green">{orc.clienteNome || 'Cliente Desconhecido'}</div>
+                         <div className="font-bold uppercase tracking-wider text-xs text-mesaninas-green">{orc.clienteNome || 'Cliente Desconhecido'}</div>
                        </td>
                        <td className="px-6 py-4">
-                         <div className="text-sm font-medium text-mesaninas-green/80">
+                         <div className="font-bold uppercase tracking-wider text-xs text-mesaninas-green/80">
                             {orc.nomeEvento || 'Evento não nomeado'}
                          </div>
                        </td>
                        <td className="px-6 py-4 text-center">
-                          <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[11px] font-bold">
+                          <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green/80 rounded-md text-[10px] font-bold uppercase tracking-wider">
                              {orc.numConvidados} pessoas
                           </span>
                        </td>

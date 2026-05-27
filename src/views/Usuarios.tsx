@@ -280,7 +280,7 @@ export default function Usuarios() {
             ) : (
               filteredUsuarios.map((user) => (
                 <tr key={user.uid} className="hover:bg-white/50 transition-colors group">
-                  <td className="px-6 py-4 font-medium text-mesaninas-green">{user.nome}</td>
+                  <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green">{user.nome}</td>
                   <td className="px-6 py-4 text-mesaninas-green/70 text-sm">{user.email}</td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex flex-col items-center justify-center gap-1">

@@ -563,17 +563,17 @@ export default function Fornecedores() {
             ) : (
               filteredFornecedores.map((fornecedor) => (
                 <tr key={fornecedor.id} className="hover:bg-mesaninas-creme/30 group">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-mesaninas-green">{fornecedor.nome}</div>
-                    <div className="text-xs text-mesaninas-green/60 mt-0.5">{fornecedor.cpf_cnpj}</div>
+                  <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green">
+                    <div>{fornecedor.nome}</div>
+                    <div className="text-[10px] text-mesaninas-green/60 mt-0.5 normal-case tracking-normal font-normal">{fornecedor.cpf_cnpj}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-mesaninas-green font-medium">{fornecedor.telefone}</div>
                     <div className="text-xs text-mesaninas-green/60 mt-0.5">{fornecedor.email}</div>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className="text-mesaninas-green/80 font-medium">
-                      {fornecedor.contatoPrincipal || '-'}
+                    <span className="px-2 py-1 bg-mesaninas-creme/50 text-mesaninas-green font-bold text-[10px] uppercase tracking-wider rounded-md">
+                      {fornecedor.contatoPrincipal?.toUpperCase() || '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center text-mesaninas-green/70 text-xs">
@@ -615,12 +615,12 @@ export default function Fornecedores() {
                 <div key={fornecedor.id} className="bg-white border border-mesaninas-creme/70 rounded-xl p-4 shadow-sm flex flex-col gap-4">
                   <div className="flex justify-between items-start gap-4">
                     <div className="min-w-0 flex-1">
-                      <div className="font-bold text-mesaninas-green text-base leading-tight truncate">{fornecedor.nome}</div>
-                      <div className="text-sm text-mesaninas-green/60 mt-1">{fornecedor.cpf_cnpj}</div>
+                      <div className="font-bold text-mesaninas-green text-xs uppercase tracking-wider leading-tight truncate">{fornecedor.nome}</div>
+                      <div className="text-[10px] text-mesaninas-green/60 mt-0.5 normal-case tracking-normal font-normal">{fornecedor.cpf_cnpj}</div>
                     </div>
                     {fornecedor.contatoPrincipal && (
                        <span className="px-2.5 py-1 whitespace-nowrap rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 bg-mesaninas-creme/50 text-mesaninas-green">
-                         {fornecedor.contatoPrincipal}
+                         {fornecedor.contatoPrincipal.toUpperCase()}
                        </span>
                     )}
                   </div>

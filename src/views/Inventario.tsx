@@ -16,7 +16,7 @@ export interface Equipamento {
   observacoes: string;
 }
 
-const categoriasExemplo = ["Servir", "Cozinha", "Transporte", "Decoração", "Mobiliário", "Outros"];
+const categoriasExemplo = ["SERVIR", "COZINHA", "TRANSPORTE", "DECORAÇÃO", "MOBILIÁRIO", "OUTROS"];
 const statusOptions = ["Operacional", "Em Manutenção", "Baixado"];
 
 export default function Inventario() {
@@ -211,21 +211,21 @@ export default function Inventario() {
                        const disponivel = eq.quantidadeTotal - (eq.quantidadeEmUso || 0);
                        return (
                          <tr key={eq.id} className="border-b border-mesaninas-creme/30 hover:bg-mesaninas-creme/5 transition-colors group">
-                           <td className="px-6 py-4 font-bold text-mesaninas-green">
+                           <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green">
                               {eq.nome}
-                              {eq.observacoes && <p className="text-xs text-gray-400 font-normal mt-0.5 line-clamp-1" title={eq.observacoes}>{eq.observacoes}</p>}
+                              {eq.observacoes && <p className="text-xs text-gray-400 font-normal mt-0.5 normal-case tracking-normal line-clamp-1" title={eq.observacoes}>{eq.observacoes}</p>}
                            </td>
-                           <td className="px-6 py-4 text-gray-600">
-                             <div className="flex items-center gap-2">
-                               <Archive className="w-4 h-4 text-gray-400" />
-                               {eq.categoria}
+                           <td className="px-6 py-4 text-gray-600 text-xs">
+                             <div className="flex items-center gap-2 uppercase tracking-wider font-semibold">
+                               <Archive className="w-4 h-4 text-gray-400 shrink-0" />
+                               {eq.categoria.toUpperCase()}
                              </div>
                            </td>
-                           <td className="px-6 py-4 text-center font-bold text-gray-700">
+                           <td className="px-6 py-4 text-center font-bold text-xs text-gray-700">
                              {eq.quantidadeTotal}
                            </td>
                            <td className="px-6 py-4 text-center">
-                             <span className={`font-bold ${disponivel <= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                             <span className={`font-bold text-xs ${disponivel <= 0 ? 'text-red-500' : 'text-emerald-600'}`}>
                                {disponivel}
                              </span>
                            </td>
@@ -262,7 +262,6 @@ export default function Inventario() {
 
       <ConfirmDeleteModal
         isOpen={!!itemToDelete}
-        itemName={itemToDelete?.nome || ''}
         onCancel={() => setItemToDelete(null)}
         onConfirm={confirmDelete}
       />
