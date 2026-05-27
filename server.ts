@@ -4,6 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import { criarOrcamento } from './server/api/criarOrcamento';
 import { criarUsuario } from './server/api/criarUsuario';
 import uploadNotaHandler from './api/upload-nota';
+import deleteNotaHandler from './api/delete-nota';
 
 const PORT = 3000;
 
@@ -23,6 +24,7 @@ async function startServer() {
   app.post('/api/orcamentos', criarOrcamento);
   app.post('/api/usuarios', criarUsuario);
   app.post('/api/upload-nota', uploadNotaHandler);
+  app.post('/api/delete-nota', deleteNotaHandler);
 
   // === VITE / CLIENT HANDLING ===
   if (process.env.NODE_ENV !== 'production') {

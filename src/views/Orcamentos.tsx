@@ -172,6 +172,7 @@ export default function Orcamentos() {
   const [imagemUrl, setImagemUrl] = useState('');
   const [linkNotaFiscal, setLinkNotaFiscal] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingOrcamentoId, setEditingOrcamentoId] = useState<string | null>(null);
@@ -512,6 +513,56 @@ export default function Orcamentos() {
       alert('Falha no upload: ' + error.message);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDeleteNota = async () => {
+    if (!linkNotaFiscal) return;
+
+    if (!window.confirm('Tem certeza que deseja remover esta nota fiscal? Esta ação apagará o arquivo do sistema.')) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch('/api/delete-nota', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileUrl: linkNotaFiscal }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Erro do servidor (Status ${response.status})`;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const errorText = await response.text();
+            if (errorText && errorText.trim().startsWith('<')) {
+              errorMessage = `Erro ${response.status}: Página não encontrada (404) ou HTML retornado.`;
+            } else if (errorText && errorText.length < 150) {
+              errorMessage = errorText;
+            }
+          }
+        } catch (_) {
+          // Fallback
+        }
+        throw new Error(errorMessage);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Resposta do servidor inválida (Não é JSON).');
+      }
+
+      setLinkNotaFiscal('');
+    } catch (error: any) {
+      console.error(error);
+      alert('Falha ao remover nota: ' + error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1561,11 +1612,33 @@ export default function Orcamentos() {
                   {linkNotaFiscal ? (
                     <div className="flex flex-col gap-2">
                        <p className="text-sm text-mesaninas-green/80">Nota fiscal já anexada:</p>
-                       <a href={linkNotaFiscal} target="_blank" rel="noreferrer" className="inline-block">
-                          <Button type="button" variant="primary" size="sm">
-                             <FileText className="w-4 h-4" /> Visualizar Nota
+                       <div className="flex flex-wrap items-center gap-3">
+                          <a href={linkNotaFiscal} target="_blank" rel="noreferrer" className="inline-block">
+                             <Button type="button" variant="primary" size="sm">
+                                <FileText className="w-4 h-4 mr-1.5 inline-block" /> Visualizar Nota
+                             </Button>
+                          </a>
+                          <Button 
+                             type="button" 
+                             variant="outline" 
+                             size="sm" 
+                             onClick={handleDeleteNota}
+                             disabled={isDeleting}
+                             className="text-red-500 hover:text-red-700 border-red-200 hover:bg-red-50"
+                          >
+                             {isDeleting ? (
+                                <>
+                                  <div className="w-3.5 h-3.5 rounded-full border-2 border-red-500 border-t-transparent animate-spin mr-1.5 inline-block"></div>
+                                  Excluindo...
+                                </>
+                             ) : (
+                                <>
+                                  <Trash2 className="w-4 h-4 mr-1.5 inline-block text-red-500" />
+                                  Remover
+                                </>
+                             )}
                           </Button>
-                       </a>
+                       </div>
                     </div>
                   ) : (
                     <div className="relative">
@@ -1602,7 +1675,7 @@ export default function Orcamentos() {
               </button>
               <button
                 onClick={handleCadastrar}
-                disabled={isSubmitting || isUploading || !nomeEvento || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > (e.quantidade - (e.utilizados || 0)); })}
+                disabled={isSubmitting || isUploading || isDeleting || !nomeEvento || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > (e.quantidade - (e.utilizados || 0)); })}
                 className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Gerando...' : (editingOrcamentoId ? 'Atualizar Orçamento' : 'Salvar Proposta')}
