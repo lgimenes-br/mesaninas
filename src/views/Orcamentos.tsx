@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Orcamento, Prato, Cliente, CustoOperacionalCategoria, ItemEstoque } from '../types';
-import { ChevronDown, Check, Pencil, Trash2, Search } from 'lucide-react';
+import { ChevronDown, Check, Pencil, Trash2, Search, UploadCloud, FileText } from 'lucide-react';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
@@ -170,6 +170,8 @@ export default function Orcamentos() {
   const [status, setStatus] = useState<string>('Em Aberto');
   const [statusPagamento, setStatusPagamento] = useState<'Aguardando' | 'Pago'>('Aguardando');
   const [imagemUrl, setImagemUrl] = useState('');
+  const [linkNotaFiscal, setLinkNotaFiscal] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingOrcamentoId, setEditingOrcamentoId] = useState<string | null>(null);
@@ -298,6 +300,7 @@ export default function Orcamentos() {
     setUsarEnderecoCadastro(false);
     setNumConvidados(orcamento.numConvidados || '');
     setImagemUrl(orcamento.imagemUrl || '');
+    setLinkNotaFiscal(orcamento.linkNotaFiscal || '');
     
     if (orcamento.pratosSelecionados && pratosDB.length > 0) {
        if (orcamento.pratosSelecionados.length > 0 && typeof orcamento.pratosSelecionados[0] === 'string') {
@@ -458,6 +461,35 @@ export default function Orcamentos() {
   const valorImposto = valorVendaSugerido * aliquotaDecimal;
   const lucroEstimado = (custoOperacionalTotal + valorImposto) * margemFormatada;
 
+  const handleUploadNota = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('notaFiscal', file);
+
+      const response = await fetch('/api/upload-nota', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao enviar a nota fiscal.');
+      }
+
+      const data = await response.json();
+      setLinkNotaFiscal(data.link);
+    } catch (error: any) {
+      console.error(error);
+      alert('Falha no upload: ' + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nomeEvento) return;
@@ -483,7 +515,9 @@ export default function Orcamentos() {
           aliquotaNF: Number(aliquotaNF) || 0,
           valorVenda: valorVendaSugerido,
           status: status,
+          statusPagamento: statusPagamento,
           imagemUrl: imagemUrl,
+          linkNotaFiscal: linkNotaFiscal,
           materiaisEstoque: materiaisEstoque.map(m => ({ materialId: m.materialId, nome: m.nome, quantidade: Number(m.quantidade) || 0 })),
           ultimoEditor: userProfile?.nome || undefined,
         };
@@ -580,6 +614,7 @@ export default function Orcamentos() {
      setStatus('Em Aberto');
      setStatusPagamento('Aguardando');
      setImagemUrl('');
+     setLinkNotaFiscal('');
      setMateriaisEstoque([]);
      setEstoqueBaixado(false);
   };
@@ -1493,6 +1528,40 @@ export default function Orcamentos() {
               </div>
               
               </div>
+              
+              {/* Anexos e Notas Fiscais */}
+              <div className="mb-6 space-y-4 p-5 md:p-6 bg-mesaninas-creme/10 border border-mesaninas-creme/50 rounded-xl overflow-visible">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-mesaninas-green/60">Anexos e Notas Fiscais</h4>
+                <div className="space-y-4">
+                  {linkNotaFiscal ? (
+                    <div className="flex flex-col gap-2">
+                       <p className="text-sm text-mesaninas-green/80">Nota fiscal já anexada:</p>
+                       <a href={linkNotaFiscal} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-2 px-4 py-2 bg-mesaninas-green text-white text-sm font-semibold rounded hover:bg-mesaninas-green/90 transition-colors">
+                          <FileText className="w-4 h-4" /> Visualizar Nota
+                       </a>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isUploading ? 'bg-gray-50 border-gray-300' : 'bg-white border-mesaninas-creme hover:bg-mesaninas-creme/20'}`}>
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            {isUploading ? (
+                              <>
+                                <div className="w-8 h-8 rounded-full border-2 border-mesaninas-yellow border-t-transparent animate-spin mb-2"></div>
+                                <p className="text-sm font-medium text-mesaninas-green/70">Enviando para o servidor...</p>
+                              </>
+                            ) : (
+                              <>
+                                <UploadCloud className="w-8 h-8 text-mesaninas-green/50 mb-2" />
+                                <p className="text-sm font-medium text-mesaninas-green/70">Clique ou arraste a Nota Fiscal aqui (PDF)</p>
+                              </>
+                            )}
+                        </div>
+                        <input type="file" className="hidden" accept="application/pdf" disabled={isUploading} onChange={handleUploadNota} />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             <div className="px-6 py-4 border-t border-mesaninas-creme/80 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
@@ -1506,7 +1575,7 @@ export default function Orcamentos() {
               </button>
               <button
                 onClick={handleCadastrar}
-                disabled={isSubmitting || !nomeEvento || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > (e.quantidade - (e.utilizados || 0)); })}
+                disabled={isSubmitting || isUploading || !nomeEvento || materiaisEstoque.some(m => { const e = estoqueDB.find(x => x.id === m.materialId); return e && Number(m.quantidade) > (e.quantidade - (e.utilizados || 0)); })}
                 className="px-6 h-12 lg:h-10 bg-mesaninas-green hover:bg-opacity-90 text-mesaninas-creme text-sm font-bold rounded-md shadow-sm transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Gerando...' : (editingOrcamentoId ? 'Atualizar Orçamento' : 'Salvar Proposta')}

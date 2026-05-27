@@ -3,6 +3,11 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { criarOrcamento } from './server/api/criarOrcamento';
 import { criarUsuario } from './server/api/criarUsuario';
+import { uploadNotaHandler } from './server/api/uploadNota';
+import multer from 'multer';
+
+// Configure multer to use memory storage
+const upload = multer({ storage: multer.memoryStorage() });
 
 const PORT = 3000;
 
@@ -21,6 +26,7 @@ async function startServer() {
   // Main Endpoints (Next.js Server Action alternative for Express)
   app.post('/api/orcamentos', criarOrcamento);
   app.post('/api/usuarios', criarUsuario);
+  app.post('/api/upload-nota', upload.single('notaFiscal'), uploadNotaHandler);
 
   // === VITE / CLIENT HANDLING ===
   if (process.env.NODE_ENV !== 'production') {

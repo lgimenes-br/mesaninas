@@ -109,6 +109,7 @@ export interface Orcamento {
   estoqueBaixado?: boolean;
   status: 'Rascunho' | 'Em Aberto' | 'Enviado' | 'Em Negociação' | 'Aprovado' | 'Entregue' | 'Recusado';
   statusPagamento?: 'Aguardando' | 'Pago';
+  linkNotaFiscal?: string;
   createdAt?: string;
   ultimoEditor?: string;
 }
