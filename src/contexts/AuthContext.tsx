@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged, User as FirebaseUser, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { Usuario } from '../types';
 
@@ -8,12 +8,14 @@ interface AuthContextType {
   currentUser: FirebaseUser | null;
   userProfile: Usuario | null;
   loading: boolean;
+  loginWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   currentUser: null,
   userProfile: null,
   loading: true,
+  loginWithGoogle: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -102,8 +104,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      const userDocRef = doc(db, 'usuarios', user.uid);
+      const docSnap = await getDoc(userDocRef);
+      
+      if (!docSnap.exists()) {
+        await setDoc(userDocRef, {
+          nome: user.displayName || user.email?.split('@')[0] || 'Usuário Google',
+          email: user.email || '',
+          perfil: 'Cliente',
+          isAdmin: false,
+          status: 'Ativo',
+          isOnline: true,
+          ultimoAcesso: serverTimestamp()
+        });
+      } else {
+        await updateDoc(userDocRef, {
+          isOnline: true,
+          ultimoAcesso: serverTimestamp()
+        });
+      }
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log('Login com Google cancelado pelo usuário.');
+      } else {
+        throw error;
+      }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, userProfile, loading }}>
+    <AuthContext.Provider value={{ currentUser, userProfile, loading, loginWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );
