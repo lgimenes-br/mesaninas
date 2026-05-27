@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  TrendingUp, TrendingDown, DollarSign, Clock, Plus, Filter, 
-  ChevronLeft, ChevronRight, MoreVertical, Edit2, Trash2, ArrowUpRight, ArrowDownRight, Wallet
+  TrendingUp, TrendingDown, DollarSign, Clock, Plus, 
+  ChevronLeft, ChevronRight, Edit2, Trash2, ArrowUpRight, ArrowDownRight, Wallet
 } from 'lucide-react';
-import { collection, onSnapshot, query, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Orcamento, Transacao } from '../types';
+import Button from '../components/Button';
+import { 
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  PieChart, Pie, Cell
+} from 'recharts';
 
 export default function Financeiro() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | '30days' | 'year'>('month');
   
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [transacoesManuais, setTransacoesManuais] = useState<Transacao[]>([]);
@@ -30,7 +36,19 @@ export default function Financeiro() {
   const [status, setStatus] = useState<'Pago' | 'Pendente'>('Pago');
 
   const categoriasReceita = ['Evento', 'Consultoria', 'Venda Direta', 'Rendimento', 'Outros'];
-  const categoriasDespesa = ['Fornecedor', 'Custo Fixo', 'Impostos', 'Marketing', 'Logística', 'Folha de Pagamento', 'Outros'];
+  const categoriasDespesa = [
+    'Fornecedor', 
+    'Combustível', 
+    'Pedágio', 
+    'Ajudantes / Diárias', 
+    'Aluguel de Equipamento', 
+    'Logística / Frete', 
+    'Custo Fixo', 
+    'Impostos', 
+    'Marketing', 
+    'Folha de Pagamento', 
+    'Outros'
+  ];
 
   useEffect(() => {
     setIsLoading(true);
@@ -48,10 +66,9 @@ export default function Financeiro() {
         const s = data.status?.toLowerCase();
         // Apenas orçamentos aprovados/concluídos geram receitas
         if (s === 'aprovado' || s === 'entregue' || s === 'concluido' || s === 'em negociação' || s === 'enviado') {
-           // We'll filter more carefully in useMemo if we want, but let's include approved/concluído for sure
-           if (s === 'aprovado' || s === 'entregue' || s === 'concluido') {
-             orcs.push({ id: doc.id, ...data } as Orcamento);
-           }
+            if (s === 'aprovado' || s === 'entregue' || s === 'concluido') {
+              orcs.push({ id: doc.id, ...data } as Orcamento);
+            }
         }
       });
       setOrcamentos(orcs);
@@ -97,21 +114,112 @@ export default function Financeiro() {
       });
     });
 
-    // Filtra pelo mês e ano
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     return list.filter(t => {
       if (!t.data) return false;
-      const [year, month] = t.data.split('-');
-      return parseInt(year) === selectedYear && parseInt(month) === selectedMonth + 1;
+      const [yearStr, monthStr, dayStr] = t.data.split('-');
+      const yearVal = parseInt(yearStr, 10);
+      const monthVal = parseInt(monthStr, 10);
+      const dayVal = parseInt(dayStr || '1', 10);
+      
+      const tDate = new Date(yearVal, monthVal - 1, dayVal);
+
+      if (selectedPeriod === 'month') {
+        return yearVal === selectedYear && monthVal === selectedMonth + 1;
+      } else if (selectedPeriod === '30days') {
+        const diffTime = startOfToday.getTime() - tDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 30;
+      } else if (selectedPeriod === 'year') {
+        return yearVal === now.getFullYear();
+      }
+      return true;
     }).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-  }, [orcamentos, transacoesManuais, selectedYear, selectedMonth]);
+  }, [orcamentos, transacoesManuais, selectedPeriod, selectedYear, selectedMonth]);
 
-  // KPIs
-  const receitasMes = allTransacoes.filter(t => t.tipo === 'Receita' && t.status === 'Pago').reduce((acc, t) => acc + Number(t.valor), 0);
-  const despesasMes = allTransacoes.filter(t => t.tipo === 'Despesa' && t.status === 'Pago').reduce((acc, t) => acc + Number(t.valor), 0);
-  const saldoAtual = receitasMes - despesasMes;
+  // KPIs calculados sobre o período selecionado
+  const receitasBruta = useMemo(() => {
+    return allTransacoes
+      .filter(t => t.tipo === 'Receita' && t.status === 'Pago')
+      .reduce((acc, t) => acc + Number(t.valor), 0);
+  }, [allTransacoes]);
 
-  const aReceber = allTransacoes.filter(t => t.tipo === 'Receita' && t.status === 'Pendente').reduce((acc, t) => acc + Number(t.valor), 0);
-  const aPagar = allTransacoes.filter(t => t.tipo === 'Despesa' && t.status === 'Pendente').reduce((acc, t) => acc + Number(t.valor), 0);
+  const custoTotal = useMemo(() => {
+    return allTransacoes
+      .filter(t => t.tipo === 'Despesa' && t.status === 'Pago')
+      .reduce((acc, t) => acc + Number(t.valor), 0);
+  }, [allTransacoes]);
+
+  const lucroLiquido = receitasBruta - custoTotal;
+
+  const margemLucroMedia = useMemo(() => {
+    if (receitasBruta === 0) return 0;
+    return (lucroLiquido / receitasBruta) * 100;
+  }, [receitasBruta, lucroLiquido]);
+
+  // Gráfico de Barras: Comparativo mensal de entradas vs saídas do ano
+  const barChartData = useMemo(() => {
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const data = months.map((month) => ({
+      name: month,
+      Entradas: 0,
+      Saídas: 0,
+    }));
+
+    const listForYear: Transacao[] = [...transacoesManuais];
+    orcamentos.forEach(orc => {
+       listForYear.push({
+         id: `orc_${orc.id}`,
+         data: orc.dataEvento || (orc.createdAt ? new Date(orc.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+         descricao: `Evento: ${orc.clienteNome || ''} ${orc.nomeEvento || ''}`.trim(),
+         categoria: 'Evento',
+         tipo: 'Receita',
+         valor: orc.valorVenda || 0,
+         status: orc.statusPagamento === 'Pago' ? 'Pago' : 'Pendente',
+         createdAt: orc.createdAt
+       });
+    });
+
+    const targetYear = selectedPeriod === 'year' ? new Date().getFullYear() : selectedYear;
+
+    listForYear.forEach(t => {
+      if (!t.data || t.status !== 'Pago') return;
+      const [yearStr, monthStr] = t.data.split('-');
+      const yearVal = parseInt(yearStr, 10);
+      const monthIdx = parseInt(monthStr, 10) - 1;
+      if (yearVal === targetYear && monthIdx >= 0 && monthIdx < 12) {
+        if (t.tipo === 'Receita') {
+          data[monthIdx].Entradas += Number(t.valor);
+        } else {
+          data[monthIdx].Saídas += Number(t.valor);
+        }
+      }
+    });
+
+    return data;
+  }, [orcamentos, transacoesManuais, selectedYear, selectedPeriod]);
+
+  // Gráfico de Rosca: Custos Operacionais
+  const donutChartData = useMemo(() => {
+    const categoryTotals: { [key: string]: number } = {};
+
+    allTransacoes.forEach(t => {
+      if (t.tipo === 'Despesa' && t.status === 'Pago') {
+        let cat = t.categoria || 'Outros';
+        if (cat === 'Ajudantes / Diárias') cat = 'Equipe';
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(t.valor);
+      }
+    });
+
+    return Object.keys(categoryTotals).map(name => ({
+      name: name,
+      value: categoryTotals[name]
+    }));
+  }, [allTransacoes]);
+
+  const PIE_COLORS = ['#00382b', '#86C29C', '#F4A261', '#E76F51', '#2A9D8F', '#E6A15C', '#E9C46A', '#DDA15E', '#9B2226'];
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -124,6 +232,10 @@ export default function Financeiro() {
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
     return dateString;
+  };
+
+  const renderTooltipFormatter = (value: number) => {
+    return [formatCurrency(value), ''];
   };
 
   const handlePrevMonth = () => {
@@ -147,6 +259,16 @@ export default function Financeiro() {
   const getMonthName = (month: number) => {
     const names = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     return names[month];
+  };
+
+  const getBadgeType = (t: Transacao) => {
+    if (t.tipo === 'Receita') {
+      return { label: 'Receita', classes: 'bg-green-100 text-green-700 border border-green-200/50' };
+    }
+    if (t.categoria === 'Fornecedor') {
+      return { label: 'Custo Insumo', classes: 'bg-blue-100 text-blue-700 border border-blue-200/50' };
+    }
+    return { label: 'Custo Extra', classes: 'bg-amber-100 text-amber-700 border border-amber-200/50' };
   };
 
   const resetForm = () => {
@@ -185,7 +307,7 @@ export default function Financeiro() {
        alert("Esta transação é vinculada a um Orçamento. Você não pode excluí-la por aqui.");
        return;
     }
-    if (confirm('Tem certeza que deseja excluir esta transação?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
        await deleteDoc(doc(db, 'transacoes', t.id));
     }
   };
@@ -229,188 +351,326 @@ export default function Financeiro() {
       
       <div className="flex flex-col gap-6 lg:p-0">
         
-        {/* CARDS DE RESUMO FINANCEIRO */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 bg-mesaninas-green/90 text-white rounded-xl shadow-lg border border-mesaninas-green flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-2 opacity-90">
-              <span className="text-xs font-bold tracking-wider uppercase">Saldo Atual</span>
-              <Wallet className="w-5 h-5 text-mesaninas-creme" />
-            </div>
-            <div className="mt-1 text-3xl font-bold font-serif">
-              {formatCurrency(saldoAtual)}
-            </div>
+        {/* Header Actions */}
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0 w-full">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button 
+              variant={selectedPeriod === 'month' ? 'primary' : 'outline'} 
+              size="sm"
+              onClick={() => setSelectedPeriod('month')}
+            >
+              Este Mês
+            </Button>
+            <Button 
+              variant={selectedPeriod === '30days' ? 'primary' : 'outline'} 
+              size="sm"
+              onClick={() => setSelectedPeriod('30days')}
+            >
+              Últimos 30 dias
+            </Button>
+            <Button 
+              variant={selectedPeriod === 'year' ? 'primary' : 'outline'} 
+              size="sm"
+              onClick={() => setSelectedPeriod('year')}
+            >
+              Este Ano
+            </Button>
           </div>
 
+          {selectedPeriod === 'month' && (
+            <div className="flex items-center bg-white rounded-lg shadow-sm p-1 border border-mesaninas-creme/80 w-fit">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="p-1 px-2 h-8 border-none hover:bg-mesaninas-creme/50"
+                onClick={handlePrevMonth}
+              >
+                 <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div className="px-6 py-1 min-w-[140px] text-center font-bold text-mesaninas-green text-xs whitespace-nowrap">
+                 {getMonthName(selectedMonth).toUpperCase()} {selectedYear}
+              </div>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="p-1 px-2 h-8 border-none hover:bg-mesaninas-creme/50"
+                onClick={handleNextMonth}
+              >
+                 <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* GRID DE KPIS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Receita Bruta */}
           <div className="p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm flex flex-col justify-between group hover:border-[#86C29C] transition-colors">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-[11px] font-bold tracking-wider uppercase text-mesaninas-green/60">Receitas do Mês</span>
+              <span className="text-[10px] font-bold tracking-wider uppercase text-mesaninas-green/60 uppercase">Receita Bruta</span>
               <div className="p-1.5 bg-green-100/50 rounded-md">
                  <ArrowUpRight className="w-4 h-4 text-green-600" />
               </div>
             </div>
-            <div className="mt-1 text-2xl font-bold text-mesaninas-green group-hover:text-green-700 transition-colors">
-              {formatCurrency(receitasMes)}
+            <div>
+              <div className="text-2xl font-bold font-serif text-mesaninas-green">
+                {formatCurrency(receitasBruta)}
+              </div>
+              <p className="text-[9px] text-mesaninas-green/50 mt-1 uppercase font-semibold">Total de entradas confirmadas</p>
             </div>
           </div>
 
+          {/* Card 2: Custo Total */}
           <div className="p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm flex flex-col justify-between group hover:border-red-200 transition-colors">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-[11px] font-bold tracking-wider uppercase text-mesaninas-green/60">Despesas do Mês</span>
+              <span className="text-[10px] font-bold tracking-wider uppercase text-mesaninas-green/60 uppercase">Custo Total</span>
               <div className="p-1.5 bg-red-100/50 rounded-md">
                  <ArrowDownRight className="w-4 h-4 text-red-500" />
               </div>
             </div>
-            <div className="mt-1 text-2xl font-bold text-mesaninas-green group-hover:text-red-600 transition-colors">
-              {formatCurrency(despesasMes)}
+            <div>
+              <div className="text-2xl font-bold font-serif text-mesaninas-green">
+                {formatCurrency(custoTotal)}
+              </div>
+              <p className="text-[9px] text-mesaninas-green/50 mt-1 uppercase font-semibold">Insumos + Custos Operacionais</p>
             </div>
           </div>
 
+          {/* Card 3: Lucro Líquido */}
           <div className="p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm flex flex-col justify-between group hover:border-mesaninas-yellow/50 transition-colors">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-[11px] font-bold tracking-wider uppercase text-mesaninas-green/60">A Receber / A Pagar</span>
-              <div className="p-1.5 bg-orange-100/50 rounded-md">
-                 <Clock className="w-4 h-4 text-orange-500" />
+              <span className="text-[10px] font-bold tracking-wider uppercase text-mesaninas-green/60 uppercase">Lucro Líquido</span>
+              <div className={`p-1.5 rounded-md ${lucroLiquido >= 0 ? 'bg-emerald-100/50' : 'bg-rose-100/50'}`}>
+                 <DollarSign className={`w-4 h-4 ${lucroLiquido >= 0 ? 'text-emerald-600' : 'text-rose-500'}`} />
               </div>
             </div>
-            <div className="space-y-1">
-               <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-mesaninas-green/60">A Receber:</span>
-                  <span className="text-green-600">{formatCurrency(aReceber)}</span>
-               </div>
-               <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-mesaninas-green/60">A Pagar:</span>
-                  <span className="text-red-500">{formatCurrency(aPagar)}</span>
-               </div>
+            <div>
+              <div className={`text-2xl font-bold font-serif ${lucroLiquido >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {formatCurrency(lucroLiquido)}
+              </div>
+              <p className="text-[9px] text-mesaninas-green/50 mt-1 uppercase font-semibold">Resultado operacional líquido</p>
+            </div>
+          </div>
+
+          {/* Card 4: Margem de Lucro Média (%) */}
+          <div className="p-5 bg-white border border-mesaninas-creme rounded-xl shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-colors">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-mesaninas-green/60 uppercase">Margem de Lucro</span>
+              <div className="p-1.5 bg-blue-100/50 rounded-md">
+                 <TrendingUp className="w-4 h-4 text-blue-500" />
+              </div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold font-serif text-mesaninas-green">
+                {margemLucroMedia.toFixed(1)}%
+              </div>
+              <p className="text-[9px] text-mesaninas-green/50 mt-1 uppercase font-semibold">Eficiência lucrativa geral</p>
             </div>
           </div>
         </div>
 
-        {/* BARRA DE AÇÕES E FILTROS */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mt-2">
-           <div className="flex items-center bg-white rounded-lg shadow-sm p-1 border border-mesaninas-creme/80 w-full sm:w-auto">
-              <button 
-                onClick={handlePrevMonth}
-                className="p-2 hover:bg-mesaninas-creme/50 rounded-md transition-colors text-mesaninas-green"
-              >
-                 <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div className="px-6 py-1 min-w-[140px] text-center font-bold text-mesaninas-green whitespace-nowrap">
-                 {getMonthName(selectedMonth)} {selectedYear}
-              </div>
-              <button 
-                onClick={handleNextMonth}
-                className="p-2 hover:bg-mesaninas-creme/50 rounded-md transition-colors text-mesaninas-green"
-              >
-                 <ChevronRight className="w-4 h-4" />
-              </button>
-           </div>
-           
-           <div className="flex items-center gap-3 w-full sm:w-auto">
-              <button 
-                 onClick={() => handleOpenModal('Receita')}
-                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#86C29C] hover:bg-[#72A684] text-white px-4 h-11 rounded-lg text-sm font-bold shadow-sm transition-colors"
-              >
-                 <Plus className="w-4 h-4" />
-                 <span>Nova Receita</span>
-              </button>
-              <button 
-                 onClick={() => handleOpenModal('Despesa')}
-                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-red-50 text-red-600 border border-mesaninas-creme/50 px-4 h-11 rounded-lg text-sm font-bold shadow-sm transition-colors"
-              >
-                 <Plus className="w-4 h-4 shrink-0" />
-                 <span>Nova Despesa</span>
-              </button>
-           </div>
+        {/* GRÁFICOS PRINCIPAIS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Gráfico de Barras: Comparativo Receitas vs Despesas */}
+          <div className="lg:col-span-2 bg-white border border-mesaninas-creme rounded-xl shadow-sm p-5 flex flex-col justify-between min-h-[350px]">
+             <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#00382b]/70 mb-1">Comparativo Mensal</h3>
+                <p className="text-[10px] text-mesaninas-green/60 mb-4 font-medium">Entradas (Receitas Pagas) vs Saídas (Custos Pagos) por mês no ano de {selectedPeriod === 'year' ? new Date().getFullYear() : selectedYear}.</p>
+             </div>
+             <div className="w-full h-[260px] text-xs">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4efdc" />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(val) => `R$${val}`} />
+                    <Tooltip formatter={renderTooltipFormatter} cursor={{ fill: 'rgba(244, 239, 220, 0.4)' }} />
+                    <Legend iconType="circle" />
+                    <Bar dataKey="Entradas" fill="#86C29C" radius={[4, 4, 0, 0]} name="Receitas" />
+                    <Bar dataKey="Saídas" fill="#EF4444" opacity={0.7} radius={[4, 4, 0, 0]} name="Custos" />
+                  </BarChart>
+                </ResponsiveContainer>
+             </div>
+          </div>
+
+          {/* Gráfico de Rosca/Donut: Distribuição de Custos Operacionais */}
+          <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm p-5 flex flex-col min-h-[350px]">
+             <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#00382b]/70 mb-1">Distribuição de Custos</h3>
+                <p className="text-[10px] text-mesaninas-green/60 mb-4 font-medium">Classificação proporcional detalhada de custos pagos no período selecionado.</p>
+             </div>
+             
+             {donutChartData.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                   <p className="text-xs text-mesaninas-green/50">Nenhum custo registrado para o período.</p>
+                </div>
+             ) : (
+                <div className="flex-1 flex flex-col justify-between">
+                   <div className="w-full h-[180px] relative">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <PieChart>
+                            <Pie
+                               data={donutChartData}
+                               cx="50%"
+                               cy="50%"
+                               innerRadius={55}
+                               outerRadius={80}
+                               paddingAngle={3}
+                               dataKey="value"
+                            >
+                               {donutChartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                               ))}
+                            </Pie>
+                            <Tooltip formatter={renderTooltipFormatter} />
+                         </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                         <span className="text-[10px] uppercase font-bold text-mesaninas-green/60">Custos</span>
+                         <span className="text-sm font-bold text-mesaninas-green">{formatCurrency(custoTotal)}</span>
+                      </div>
+                   </div>
+
+                   {/* Legenda do Donut */}
+                   <div className="grid grid-cols-2 gap-2 mt-4 max-h-[100px] overflow-y-auto text-[10px] text-mesaninas-green/80">
+                      {donutChartData.map((item, index) => {
+                         const percent = custoTotal > 0 ? (item.value / custoTotal) * 100 : 0;
+                         return (
+                            <div key={item.name} className="flex items-center gap-1.5 truncate">
+                               <span 
+                                  className="w-2.5 h-2.5 rounded-full shrink-0" 
+                                  style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                               />
+                               <span className="truncate font-medium">{item.name?.toUpperCase()}:</span>
+                               <span className="font-bold shrink-0">{percent.toFixed(0)}%</span>
+                            </div>
+                         );
+                      })}
+                   </div>
+                </div>
+             )}
+          </div>
         </div>
 
-        {/* TABELA DE TRANSAÇÕES */}
-        <div className="bg-white border text-mesaninas-green border-mesaninas-creme rounded-xl shadow-sm flex flex-col overflow-hidden w-full relative min-h-[400px]">
-           {isLoading ? (
-             <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
-                <div className="w-8 h-8 border-4 border-mesaninas-green/20 border-t-mesaninas-yellow rounded-full animate-spin"></div>
-             </div>
-           ) : null}
+        {/* TABELA DE LANÇAMENTOS RECENTES */}
+        <div className="space-y-4">
+           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
+              <div>
+                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#00382b]/85">Lançamentos Recentes</h3>
+                 <p className="text-xs text-mesaninas-green/70">Extrato detalhado das movimentações financeiras de caixa.</p>
+              </div>
 
-           <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60">
-                  <tr className="border-b border-[#f4efdc]/50">
-                    <th className="px-6 py-3 font-semibold whitespace-nowrap">Data</th>
-                    <th className="px-6 py-3 font-semibold">Descrição</th>
-                    <th className="px-6 py-3 font-semibold">Categoria</th>
-                    <th className="px-6 py-3 font-semibold text-center">Tipo</th>
-                    <th className="px-6 py-3 font-semibold text-right">Valor (R$)</th>
-                    <th className="px-6 py-3 font-semibold text-center">Status</th>
-                    <th className="px-6 py-3 font-semibold text-center">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-mesaninas-creme/40">
-                  {allTransacoes.length === 0 ? (
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                 <Button 
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleOpenModal('Receita')}
+                    className="flex-1 sm:flex-none uppercase text-xs tracking-wider"
+                 >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Nova Receita</span>
+                 </Button>
+                 <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenModal('Despesa')}
+                    className="flex-1 sm:flex-none uppercase text-xs tracking-wider font-bold"
+                 >
+                    <Plus className="w-3.5 h-3.5 shrink-0" />
+                    <span>Nova Despesa</span>
+                 </Button>
+              </div>
+           </div>
+
+           <div className="bg-white border text-mesaninas-green border-mesaninas-creme rounded-xl shadow-sm flex flex-col overflow-hidden w-full relative min-h-[400px]">
+              {isLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
+                   <div className="w-8 h-8 border-4 border-mesaninas-green/20 border-t-mesaninas-yellow rounded-full animate-spin"></div>
+                </div>
+              ) : null}
+
+              <div className="overflow-x-auto">
+                 <table className="w-full text-left border-collapse text-sm">
+                   {/* Cabeçalho sticky com sombra */}
+                   <thead className="bg-[#f4efdc]/30 text-[10px] uppercase tracking-wider font-bold text-[#00382b]/60 sticky top-0 z-10 shadow-sm border-b border-[#f4efdc]/50">
                      <tr>
-                       <td colSpan={7} className="px-6 py-16 text-center text-mesaninas-green/50 text-sm">
-                         Nenhuma transação encontrada no período.
-                       </td>
+                       <th className="px-6 py-3 font-semibold whitespace-nowrap">Data</th>
+                       <th className="px-6 py-3 font-semibold">Descrição</th>
+                       <th className="px-6 py-3 font-semibold">Categoria</th>
+                       <th className="px-6 py-3 font-semibold text-center">Tipo</th>
+                       <th className="px-6 py-3 font-semibold text-right">Valor (R$)</th>
+                       <th className="px-6 py-3 font-semibold text-center">Status</th>
+                       <th className="px-6 py-3 font-semibold text-center">Ações</th>
                      </tr>
-                  ) : (
-                    allTransacoes.map((t) => (
-                      <tr key={t.id} className="hover:bg-mesaninas-creme/20 transition-colors group">
-                        <td className="px-6 py-4 whitespace-nowrap text-mesaninas-green/80">{formatDate(t.data)}</td>
-                        <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green max-w-[200px] truncate" title={t.descricao}>
-                           <span className="group-hover:text-mesaninas-green/80 transition-colors">{t.descricao}</span>
-                           {t.id.startsWith('orc_') && (
-                             <span className="ml-2 inline-block px-1.5 py-0.5 bg-mesaninas-creme rounded text-[9px] uppercase tracking-wider text-mesaninas-green/60 tracking-normal normal-case font-normal">Automático</span>
-                           )}
-                        </td>
-                        <td className="px-6 py-4 text-mesaninas-green/80 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider">{t.categoria?.toUpperCase()}</td>
-                        <td className="px-6 py-4 text-center">
-                           {t.tipo === 'Receita' ? (
-                             <span className="inline-flex p-1 bg-green-100 text-green-600 rounded-md" title="Receita">
-                                <ArrowUpRight className="w-4 h-4" />
-                             </span>
-                           ) : (
-                             <span className="inline-flex p-1 bg-red-100 text-red-500 rounded-md" title="Despesa">
-                                <ArrowDownRight className="w-4 h-4" />
-                             </span>
-                           )}
-                        </td>
-                        <td className={`px-6 py-4 text-right font-bold whitespace-nowrap ${t.tipo === 'Receita' ? 'text-green-600' : 'text-red-500'}`}>
-                          {t.tipo === 'Receita' ? '+ ' : '- '}
-                          {formatCurrency(Number(t.valor))}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                           {t.status === 'Pago' ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold leading-none bg-green-100 text-green-700">
-                                Pago
-                              </span>
-                           ) : (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold leading-none bg-orange-100 text-orange-600">
-                                Pendente
-                              </span>
-                           )}
-                        </td>
-                        <td className="px-6 py-4">
-                           <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={() => handleEdit(t)}
-                                className="p-1.5 text-mesaninas-green/50 hover:text-mesaninas-yellow hover:bg-mesaninas-yellow/10 rounded-md transition-colors"
-                                title="Editar"
-                              >
-                                 <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(t)}
-                                className="p-1.5 text-mesaninas-green/50 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                                title="Excluir"
-                              >
-                                 <Trash2 className="w-4 h-4" />
-                              </button>
-                           </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                   </thead>
+                   <tbody className="divide-y divide-mesaninas-creme/40">
+                     {allTransacoes.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-16 text-center text-mesaninas-green/50 text-sm">
+                            Nenhuma transação encontrada no período.
+                          </td>
+                        </tr>
+                     ) : (
+                       allTransacoes.map((t) => {
+                         const badge = getBadgeType(t);
+                         return (
+                           <tr key={t.id} className="hover:bg-mesaninas-creme/20 transition-colors group">
+                             <td className="px-6 py-4 whitespace-nowrap text-mesaninas-green/80">{formatDate(t.data)}</td>
+                             <td className="px-6 py-4 font-bold uppercase tracking-wider text-xs text-mesaninas-green max-w-[200px] truncate" title={t.descricao}>
+                                <div className="flex items-center gap-2">
+                                   <span className="group-hover:text-mesaninas-green/80 transition-colors">{t.descricao}</span>
+                                   {t.id.startsWith('orc_') && (
+                                     <span className="inline-block px-1.5 py-0.5 bg-mesaninas-creme rounded text-[9px] uppercase tracking-wider text-mesaninas-green/60 font-semibold">Automático</span>
+                                   )}
+                                </div>
+                             </td>
+                             <td className="px-6 py-4 text-mesaninas-green/80 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider">
+                                {t.categoria?.toUpperCase()}
+                             </td>
+                             <td className="px-6 py-4 text-center">
+                                <span className={`inline-block px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider shrink-0 ${badge.classes}`}>
+                                   {badge.label}
+                                </span>
+                             </td>
+                             <td className={`px-6 py-4 text-right font-bold whitespace-nowrap ${t.tipo === 'Receita' ? 'text-green-600' : 'text-red-500'}`}>
+                               {t.tipo === 'Receita' ? '+ ' : '- '}
+                               {formatCurrency(Number(t.valor))}
+                             </td>
+                             <td className="px-6 py-4 text-center">
+                                {t.status === 'Pago' ? (
+                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider leading-none bg-green-100 text-green-700">
+                                     Pago
+                                   </span>
+                                ) : (
+                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider leading-none bg-orange-100 text-orange-600">
+                                     Pendente
+                                   </span>
+                                )}
+                             </td>
+                             <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                   <button 
+                                     onClick={() => handleEdit(t)}
+                                     className="p-1.5 text-mesaninas-green/50 hover:text-mesaninas-yellow hover:bg-mesaninas-yellow/10 rounded-md transition-colors"
+                                     title="Editar"
+                                   >
+                                      <Edit2 className="w-4 h-4" />
+                                   </button>
+                                   <button 
+                                     onClick={() => handleDelete(t)}
+                                     className="p-1.5 text-mesaninas-green/50 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                     title="Excluir"
+                                   >
+                                      <Trash2 className="w-4 h-4" />
+                                   </button>
+                                </div>
+                             </td>
+                           </tr>
+                         );
+                       })
+                     )}
+                   </tbody>
+                 </table>
+              </div>
            </div>
         </div>
 
@@ -529,22 +789,25 @@ export default function Financeiro() {
             </div>
              
             <div className="px-6 py-4 border-t border-mesaninas-creme/80 bg-white flex justify-end gap-3 shrink-0 rounded-b-2xl">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 h-12 lg:h-10 text-sm font-medium text-mesaninas-green/70 hover:text-mesaninas-green transition-colors"
                 disabled={isSubmitting}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="financeiroForm"
                 disabled={isSubmitting}
-                className={`px-6 h-12 lg:h-10 hover:bg-opacity-90 text-white transition-colors text-sm font-bold rounded-md shadow-sm disabled:opacity-50 ${tipo === 'Receita' ? 'bg-[#86C29C]' : 'bg-red-500'}`}
+                variant={tipo === 'Receita' ? 'primary' : 'outline'}
+                size="sm"
+                className={tipo === 'Receita' ? 'bg-[#86C29C] border-transparent text-white' : 'bg-red-500 hover:bg-red-600 text-white border-transparent'}
               >
                 {isSubmitting ? 'Salvando...' : 'Salvar Lançamento'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
