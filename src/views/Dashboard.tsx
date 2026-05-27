@@ -12,7 +12,6 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [clientesTotais, setClientesTotais] = useState<number>(0);
   const [estoque, setEstoque] = useState<ItemEstoque[]>([]);
-  const [despesasDb, setDespesasDb] = useState<any[]>([]);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [configGerais, setConfigGerais] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -40,14 +39,6 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
       setEstoque(docs);
     });
 
-    const unsubDespesas = onSnapshot(collection(db, 'despesas'), (snapshot) => {
-      const docs: any[] = [];
-      snapshot.forEach(doc => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
-      setDespesasDb(docs);
-    });
-
     const unsubTrans = onSnapshot(collection(db, 'transacoes'), (snapshot) => {
       const docs: Transacao[] = [];
       snapshot.forEach(doc => {
@@ -66,7 +57,6 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
       unsubClientes();
       unsubOrcamentos();
       unsubEstoque();
-      unsubDespesas();
       unsubTrans();
       unsubConfig();
     };
@@ -130,25 +120,107 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
 
   const firstName = userProfile?.nome ? userProfile.nome.split(' ')[0] : 'Admin';
 
+  const allTransacoes = useMemo(() => {
+    const list: Transacao[] = [];
+    orcamentos.forEach(orc => {
+       const dataTransacao = orc.dataEvento || (orc.createdAt ? new Date(orc.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+       const statusTransacao = orc.statusPagamento === 'Pago' ? 'Pago' : 'Pendente';
+       const eventoNome = `Evento: ${orc.clienteNome || ''} ${orc.nomeEvento || ''}`.trim();
+
+       // 1. Receita (Valor de Venda)
+       list.push({
+         id: `orc_${orc.id}`,
+         data: dataTransacao,
+         descricao: eventoNome,
+         categoria: 'Evento',
+         tipo: 'Receita',
+         valor: orc.valorVenda || 0,
+         status: statusTransacao,
+         createdAt: orc.createdAt
+       });
+
+       // 2. Despesa - Custo Alimentos / Insumos
+       if (orc.custoAlimentos && orc.custoAlimentos > 0) {
+          list.push({
+             id: `orc_desp_alim_${orc.id}`,
+             data: dataTransacao,
+             descricao: `Insumos: ${eventoNome}`,
+             categoria: 'Fornecedor',
+             tipo: 'Despesa',
+             valor: orc.custoAlimentos,
+             status: statusTransacao,
+             createdAt: orc.createdAt
+          });
+       }
+
+       // 3. Despesa - Custos Extras
+       if (orc.custosExtras && orc.custosExtras.length > 0) {
+          orc.custosExtras.forEach((extra, idx) => {
+             if (Number(extra.valor) > 0) {
+                list.push({
+                   id: `orc_desp_ext_${orc.id}_${idx}`,
+                   data: dataTransacao,
+                   descricao: `Custos Op. (${extra.descricao || 'Geral'}): ${eventoNome}`,
+                   categoria: extra.descricao || 'Outros',
+                   tipo: 'Despesa',
+                   valor: Number(extra.valor),
+                   status: statusTransacao,
+                   createdAt: orc.createdAt
+                });
+             }
+          });
+       }
+
+       // 4. Despesa - Impostos
+       const currentAliquota = orc.aliquotaNF !== undefined ? orc.aliquotaNF : Number(configGerais?.aliquotaNF || 0);
+       if (currentAliquota > 0) {
+          const custoTotal = (orc.custoAlimentos || 0) + (orc.custosExtras?.reduce((sum, e) => sum + Number(e.valor || 0), 0) || 0);
+          const margem = orc.margemLucro !== undefined ? orc.margemLucro : Number(configGerais?.margemLucro || 20);
+          
+          const somaPercentuais = (margem / 100) + (currentAliquota / 100);
+          const fatorDivisor = somaPercentuais < 1 ? (1 - somaPercentuais) : 1;
+          const valorVendaSugerido = custoTotal / fatorDivisor;
+          const valorImposto = valorVendaSugerido * (currentAliquota / 100);
+
+          if (valorImposto > 0) {
+             list.push({
+                id: `orc_imposto_${orc.id}`,
+                data: dataTransacao,
+                descricao: `Impostos NF (${currentAliquota}%): ${eventoNome}`,
+                categoria: 'Impostos',
+                tipo: 'Despesa',
+                valor: valorImposto,
+                status: statusTransacao,
+                createdAt: orc.createdAt
+             });
+          }
+       }
+    });
+    return [...transacoes, ...list];
+  }, [orcamentos, transacoes, configGerais]);
+
   // Chart Data
   const getChartData = () => {
     const data = [];
     for (let i = 5; i >= 0; i--) {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
+        const targetMonth = d.getMonth() + 1;
+        const targetYear = d.getFullYear();
         const monthYear = d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
         
         let receitas = 0;
         let despesas = 0;
         
-        orcamentos.forEach(o => {
-            if (!o.dataEvento) return;
-            const [year, month] = o.dataEvento.split('-');
-            if (parseInt(month) === d.getMonth() + 1 && parseInt(year) === d.getFullYear()) {
-            if (['aprovado', 'entregue', 'concluido'].includes(o.status?.toLowerCase() || '')) {
-                receitas += Number(o.valorVenda) || 0;
-                despesas += Number(o.custoTotal) || 0; 
-            }
+        allTransacoes.forEach(t => {
+            if (!t.data || t.status !== 'Pago') return;
+            const [year, month] = t.data.split('-');
+            if (parseInt(month) === targetMonth && parseInt(year) === targetYear) {
+                if (t.tipo === 'Receita') {
+                    receitas += Number(t.valor) || 0;
+                } else if (t.tipo === 'Despesa') {
+                    despesas += Number(t.valor) || 0;
+                }
             }
         });
         
@@ -193,15 +265,38 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
     const limitDespesaDate = new Date(today);
     limitDespesaDate.setDate(limitDespesaDate.getDate() + diasDespesa);
     
-    despesasDb.forEach(d => {
-       if (d.dataVencimento && d.status !== 'Pago') {
-           const [year, month, day] = d.dataVencimento.split('-');
-           const valDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    allTransacoes.forEach(t => {
+       if (t.tipo === 'Despesa' && t.data && t.status !== 'Pago') {
+           const [year, month, day] = t.data.split('-');
+           const valDate = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
            if (valDate >= today && valDate <= limitDespesaDate) {
-              alerts.push({ type: 'critical', title: 'Vencimento Próximo', desc: `Despesa "${d.descricao}" no valor de ${formatCurrency(d.valor)} vence no dia ${d.dataVencimento.split('-').reverse().join('/')}.` });
+              alerts.push({ type: 'critical', title: 'Vencimento Próximo', desc: `Despesa "${t.descricao}" no valor de ${formatCurrency(t.valor)} vence no dia ${t.data.split('-').reverse().join('/')}.` });
            } else if (valDate < today) {
-              alerts.push({ type: 'critical', title: 'Despesa Atrasada', desc: `Despesa "${d.descricao}" no valor de ${formatCurrency(d.valor)} está vencida desde ${d.dataVencimento.split('-').reverse().join('/')}.` });
+              alerts.push({ type: 'critical', title: 'Despesa Atrasada', desc: `Despesa "${t.descricao}" no valor de ${formatCurrency(t.valor)} está vencida desde ${t.data.split('-').reverse().join('/')}.` });
            }
+       }
+    });
+
+    // Eventos Próximos
+    const limitEventoDate = new Date(today);
+    limitEventoDate.setDate(limitEventoDate.getDate() + 7);
+    orcamentos.forEach(o => {
+       if (o.status !== 'Recusado' && o.status !== 'Entregue' && o.dataEvento) {
+          const [year, month, day] = o.dataEvento.split('-');
+          const eventDate = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+          if (eventDate >= today && eventDate <= limitEventoDate) {
+             const diffTime = eventDate.getTime() - today.getTime();
+             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+             const desc = diffDays === 0 ? `é hoje!` : diffDays === 1 ? 'é amanhã!' : `será em ${diffDays} dias.`;
+             const clientName = o.clienteNome || 'Cliente Desconhecido';
+             const eventName = o.nomeEvento ? `"${o.nomeEvento}"` : `de ${clientName}`;
+             
+             alerts.push({ 
+                type: o.status === 'Aprovado' ? 'warning' : 'critical', 
+                title: 'Evento Próximo', 
+                desc: `O evento ${eventName} ${desc} (Status: ${o.status})` 
+             });
+          }
        }
     });
 
@@ -247,7 +342,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
     const totals: { [key: string]: number } = {};
     let totalValue = 0;
     
-    transacoes.forEach(t => {
+    allTransacoes.forEach(t => {
       if (t.tipo === 'Despesa') {
         const cat = t.categoria || 'Outros';
         totals[cat] = (totals[cat] || 0) + Number(t.valor);
@@ -262,7 +357,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
       })),
       total: totalValue
     };
-  }, [transacoes]);
+  }, [allTransacoes]);
 
   const isDonutEmpty = useMemo(() => {
     return despesasPorCategoria.data.length === 0;
