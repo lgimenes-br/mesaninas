@@ -124,5 +124,19 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /estoque/{materialId} {
+      allow get: if isFuncionarioMesaninas() && isValidId(materialId);
+      allow list: if isFuncionarioMesaninas();
+      allow create, update: if isFuncionarioMesaninas() && isValidId(materialId);
+      allow delete: if false;
+    }
+
+    match /configuracoes/{configId} {
+      allow get: if isFuncionarioMesaninas() && isValidId(configId);
+      allow list: if isFuncionarioMesaninas();
+      allow create, update: if isFuncionarioMesaninas() && isValidId(configId);
+      allow delete: if false;
+    }
+
   }
 }

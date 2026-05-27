@@ -48,9 +48,33 @@
         "custoTotal": { "type": "number" },
         "valorVenda": { "type": "number" },
         "status": { "type": "string", "enum": ["pendente", "aprovado", "rejeitado", "cancelado"] },
-        "createdAt": { "type": "string" }
+        "createdAt": { "type": "string" },
+        "linkNotaFiscal": { "type": "string" }
       },
       "required": ["clienteId", "dataEvento", "numConvidados", "custoTotal", "valorVenda", "status"]
+    },
+    "estoque": {
+      "title": "Estoque",
+      "description": "Controle de estoque de materiais",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "unidadeMedida": { "type": "string" },
+        "quantidade": { "type": "number" },
+        "custoUnitario": { "type": "number" },
+        "utilizados": { "type": "number" },
+        "minimo": { "type": "number" }
+      },
+      "required": ["nome", "unidadeMedida", "quantidade", "custoUnitario"]
+    },
+    "configuracoes": {
+      "title": "Configuracoes",
+      "description": "Configurações gerais do sistema em documento fixo gerais",
+      "type": "object",
+      "properties": {
+        "aliquotaNF": { "type": "number" },
+        "margemLucro": { "type": "number" }
+      }
     }
   },
   "firestore": {
@@ -60,7 +84,7 @@
     },
     "/ingredientes/{ingredienteId}": {
       "schema": { "$ref": "#/entities/ingrediente" },
-      "description": "Controle de estoque"
+      "description": "Ingredientes do menu"
     },
     "/pratos/{pratoId}": {
        "schema": { "$ref": "#/entities/prato" },
@@ -69,6 +93,14 @@
     "/orcamentos/{orcamentoId}": {
        "schema": { "$ref": "#/entities/orcamento" },
        "description": "Gestão de orçamentos"
+    },
+    "/estoque/{materialId}": {
+       "schema": { "$ref": "#/entities/estoque" },
+       "description": "Lista de itens no estoque de insumos"
+    },
+    "/configuracoes/{configId}": {
+       "schema": { "$ref": "#/entities/configuracoes" },
+       "description": "Configurações do sistema"
     }
   }
 }

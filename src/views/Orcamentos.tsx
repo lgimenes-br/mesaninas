@@ -29,8 +29,58 @@ const parseCurrency = (value: string) => {
   return parseInt(onlyDigits, 10) / 100;
 };
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(
+  error: unknown,
+  operationType: OperationType,
+  path: string | null,
+  userId?: string | null,
+  email?: string | null
+) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: userId || null,
+      email: email || null,
+      emailVerified: true,
+      isAnonymous: false,
+      tenantId: null,
+      providerInfo: []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 export default function Orcamentos() {
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [pratosDB, setPratosDB] = useState<Prato[]>([]);
   const [clientesDB, setClientesDB] = useState<Cliente[]>([]);
@@ -222,6 +272,7 @@ export default function Orcamentos() {
         console.error("Erro ao buscar orçamentos:", err);
         setError('Ocorreu um erro ao conectar no Firebase (ou permissão negada). Exibindo dados locais para demonstração de interface.');
         setLoading(false);
+        handleFirestoreError(err, OperationType.LIST, 'orcamentos', currentUser?.uid, currentUser?.email);
       }
     );
 
@@ -655,7 +706,7 @@ export default function Orcamentos() {
          await batch.commit();
 
       } catch (err: any) {
-         console.warn("Save failed, using local fallback: ", err);
+         console.error("Save failed, using local fallback: ", err); handleFirestoreError(err, editingOrcamentoId ? OperationType.UPDATE : OperationType.CREATE, 'orcamentos', currentUser?.uid, currentUser?.email);
          if (editingOrcamentoId) {
              setOrcamentos(prev => prev.map(o => o.id === editingOrcamentoId ? { ...o, ...orcamentoData } as Orcamento : o));
          } else {
