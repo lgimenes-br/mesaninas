@@ -38,22 +38,27 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
     }
 
-    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-    if (!clientEmail || !privateKey || !folderId) {
-      console.error("Missing Google credentials in environment variables.");
-      return res.status(500).json({ error: 'Configuração do Google Drive ausente no servidor.' });
+    if (!clientId || !clientSecret || !refreshToken || !folderId) {
+      console.error("Missing Google Drive OAuth2 credentials in environment variables.");
+      return res.status(500).json({ error: 'Configuração do Google Drive OAuth2 ausente no servidor.' });
     }
 
-    const auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ['https://www.googleapis.com/auth/drive.file']
+    const oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      'https://developers.google.com/oauthplayground'
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: refreshToken
     });
 
-    const drive = google.drive({ version: 'v3', auth });
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     const bufferStream = new stream.PassThrough();
     bufferStream.end(req.file.buffer);
