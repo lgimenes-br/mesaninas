@@ -197,7 +197,9 @@ export default function Financeiro() {
        // 4. Despesa - Impostos
        const currentAliquota = orc.aliquotaNF !== undefined ? orc.aliquotaNF : Number(configGerais?.aliquotaNF || 0);
        if (currentAliquota > 0) {
-          const valorImposto = (orc.valorVenda || 0) * (currentAliquota / 100);
+          const aliquotaDecimal = currentAliquota / 100;
+          const valorSemImposto = (orc.valorVenda || 0) / (1 + aliquotaDecimal);
+          const valorImposto = valorSemImposto * aliquotaDecimal;
 
           if (valorImposto > 0) {
              list.push({

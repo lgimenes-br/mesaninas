@@ -506,12 +506,12 @@ export default function Orcamentos() {
 
   const margemFormatada = margem / 100;
   const aliquotaDecimal = (aliquotaNF || 0) / 100;
-  const divisorImposto = 1 - (aliquotaDecimal * (1 + margemFormatada));
-  const fatorDivisorSeguro = divisorImposto > 0 ? divisorImposto : 1; 
 
-  const valorVendaSugerido = (custoOperacionalTotal * (1 + margemFormatada)) / fatorDivisorSeguro;
-  const valorImposto = valorVendaSugerido * aliquotaDecimal;
-  const lucroEstimado = (custoOperacionalTotal + valorImposto) * margemFormatada;
+  const lucroEstimado = custoOperacionalTotal * margemFormatada;
+  const valorSemImposto = custoOperacionalTotal + lucroEstimado;
+  
+  const valorImposto = valorSemImposto * aliquotaDecimal;
+  const valorVendaSugerido = valorSemImposto + valorImposto;
 
   const handleUploadNota = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1406,6 +1406,16 @@ export default function Orcamentos() {
                    <ul className="mt-4 space-y-3">
                       {pratosSelecionados.map((prato) => {
                          const pratoRef = pratosDB.find(p => p.id === prato.pratoId);
+                         
+                         const convidados = Number(numConvidados) || 0;
+                         const rendimento = Number(prato.rendimento) || 1;
+                         const tipoVenda = prato.tipoVenda || 'Por Quilo';
+                         let fatorDeMultiplicacao = tipoVenda === 'Por Unidade' ? convidados * rendimento : convidados / rendimento;
+                         if (prato.quantidadeOverride !== undefined && prato.quantidadeOverride > 0) {
+                            fatorDeMultiplicacao = prato.quantidadeOverride;
+                         }
+                         const custoTotalPrato = fatorDeMultiplicacao * (prato.custo || 0);
+
                          return (
                          <li key={prato.pratoId} className="flex flex-col gap-2 text-sm bg-mesaninas-creme/20 px-3 py-3 rounded-lg border border-mesaninas-creme/50 mt-1">
                             <div className="flex items-center justify-between border-b border-mesaninas-creme/30 pb-2 mb-1 gap-3">
@@ -1418,7 +1428,7 @@ export default function Orcamentos() {
                                 <span className="font-bold text-mesaninas-green">{prato.nome}</span>
                               </div>
                               <div className="flex items-center gap-3 shrink-0">
-                                <span className="text-xs font-bold text-mesaninas-green">{(prato.custo || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                <span className="text-xs font-bold text-mesaninas-green">{custoTotalPrato.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                 <button type="button" onClick={() => setPratosSelecionados(prev => prev.filter(p => p.pratoId !== prato.pratoId))} className="text-mesaninas-peach hover:text-red-500 font-bold p-1 rounded transition-colors w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-mesaninas-creme/50 hover:border-red-200">×</button>
                               </div>
                             </div>
@@ -1627,6 +1637,16 @@ export default function Orcamentos() {
                        <span className="font-medium text-mesaninas-creme">Custo Operacional Total</span>
                        <span className="text-mesaninas-peach font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(custoOperacionalTotal)}</span>
                     </div>
+
+                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
+                       <span className="text-mesaninas-yellow font-medium">+ Lucro Estimado ({margem}%)</span>
+                       <span className="text-mesaninas-yellow font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lucroEstimado)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
+                       <span className="font-bold text-mesaninas-creme">Subtotal (Sem imposto)</span>
+                       <span className="text-white font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorSemImposto)}</span>
+                    </div>
                     
                     {aliquotaNF > 0 && (
                       <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
@@ -1634,16 +1654,6 @@ export default function Orcamentos() {
                          <span className="text-orange-300 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorImposto)}</span>
                       </div>
                     )}
-
-                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
-                       <span className="font-bold text-mesaninas-creme">Subtotal</span>
-                       <span className="text-white font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(custoOperacionalTotal + valorImposto)}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center py-1 border-b border-mesaninas-creme/10">
-                       <span className="text-mesaninas-yellow font-medium">+ Lucro Estimado ({margem}%)</span>
-                       <span className="text-mesaninas-yellow font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lucroEstimado)}</span>
-                    </div>
                     
                     <div className="flex justify-between items-end pt-4 mt-2">
                        <span className="text-xs font-bold uppercase tracking-wider text-mesaninas-creme/70">Valor Total</span>

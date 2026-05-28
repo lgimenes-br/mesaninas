@@ -126,14 +126,6 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
               )}
             </div>
 
-            <div className={mainNavItemClass(activeView === 'inventario')} onClick={() => onNavigate('inventario')}>
-              <Archive size={16} />
-              <span>Inventário</span>
-              {activeView === 'inventario' && (
-                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#e7e873] rounded-full" />
-              )}
-            </div>
-
             {/* CADASTROS DROPDOWN */}
             <div 
               ref={dropdownRef}
@@ -206,6 +198,14 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
               </button>
 
               <button 
+                onClick={() => onNavigate('inventario')}
+                className={`p-2 text-[#f4efdc]/75 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer ${activeView === 'inventario' ? 'bg-white/10 text-white' : ''}`}
+                title="Inventário"
+              >
+                <Archive size={18} />
+              </button>
+
+              <button 
                 onClick={() => onNavigate('configuracoes')}
                 className={`p-2 text-[#f4efdc]/75 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer ${activeView === 'configuracoes' ? 'bg-white/10 text-white' : ''}`}
                 title="Configurações"
@@ -271,14 +271,6 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
             <span>Estoque</span>
           </div>
 
-          <div 
-            className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'inventario' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
-            onClick={() => { onNavigate('inventario'); setMobileMenuOpen(false); }}
-          >
-            <Archive size={18} />
-            <span>Inventário</span>
-          </div>
-
           <div className="pt-2 pb-1 px-2.5 text-[10px] font-bold tracking-widest text-[#f4efdc]/50 uppercase">
             Cadastros
           </div>
@@ -317,6 +309,14 @@ export default function Navbar({ activeView, onNavigate }: NavbarProps) {
             >
               <LineChart size={18} />
               <span>Financeiro</span>
+            </div>
+
+            <div 
+              className={`flex items-center gap-2.5 p-2.5 rounded-lg text-sm font-medium ${activeView === 'inventario' ? 'bg-[#e7e873] text-[#00382b] font-bold' : 'text-[#f4efdc]/85'}`}
+              onClick={() => { onNavigate('inventario'); setMobileMenuOpen(false); }}
+            >
+              <Archive size={18} />
+              <span>Inventário</span>
             </div>
 
             <div 
