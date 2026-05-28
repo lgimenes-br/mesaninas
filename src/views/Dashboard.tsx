@@ -603,27 +603,21 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
             <div className="flex-1 flex flex-col justify-between min-h-0">
               <div className="w-full h-[140px] min-h-[140px] relative shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={despesasPorCategoria.data}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={65}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
+                  <BarChart data={despesasPorCategoria.data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4efdc" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#00382b' }} tickFormatter={(val) => val.substring(0, 5)} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#00382b' }} tickFormatter={(val) => `R$${val > 1000 ? (val/1000).toFixed(1)+'k' : val}`} />
+                    <Tooltip 
+                      cursor={{ fill: '#f4efdc', opacity: 0.3 }}
+                      formatter={(value: number) => [formatCurrency(value), 'Custo']}
+                    />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                       {despesasPorCategoria.data.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={DONUT_COLORS[index % DONUT_COLORS.length]} />
                       ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [formatCurrency(value), '']} />
-                  </PieChart>
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[9px] uppercase font-bold text-mesaninas-green/60">Custos</span>
-                  <span className="text-xs font-bold text-mesaninas-green">{formatCurrency(despesasPorCategoria.total)}</span>
-                </div>
               </div>
 
               {/* Custom Legend */}
