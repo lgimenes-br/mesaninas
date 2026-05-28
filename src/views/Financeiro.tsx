@@ -572,7 +572,7 @@ export default function Financeiro() {
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#00382b]/70 mb-1">Comparativo Mensal</h3>
                 <p className="text-[10px] text-mesaninas-green/60 mb-4 font-medium">Entradas (Receitas Pagas) vs Saídas (Custos Pagos) por mês no ano de {selectedPeriod === 'year' ? new Date().getFullYear() : selectedYear}.</p>
              </div>
-             <div className="w-full h-[260px] text-xs">
+             <div className="w-full h-[260px] min-h-[260px] text-xs">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4efdc" />
@@ -600,7 +600,7 @@ export default function Financeiro() {
                 </div>
              ) : (
                 <div className="flex-1 flex flex-col justify-between">
-                   <div className="w-full h-[180px] relative">
+                   <div className="w-full h-[180px] min-h-[180px] relative">
                       <ResponsiveContainer width="100%" height="100%">
                          <PieChart>
                             <Pie

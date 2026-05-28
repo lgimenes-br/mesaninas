@@ -509,9 +509,9 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
           </div>
 
           {/* Chart */}
-          <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm p-5 h-80 flex flex-col">
+          <div className="bg-white border border-mesaninas-creme rounded-xl shadow-sm p-5 flex-1 flex flex-col">
              <h3 className="font-serif font-bold text-lg text-mesaninas-green mb-4">Saúde Financeira (Últimos 6 Meses)</h3>
-             <div className="flex-1 w-full min-h-0 relative">
+             <div className="flex-1 w-full min-h-[250px] relative">
                <ResponsiveContainer width="100%" height="100%">
                  <BarChart data={getChartData()} margin={{ top: 10, right: 10, left: 10, bottom: 0 }} barGap={6}>
                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -564,7 +564,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
               <p className="text-xs text-mesaninas-green/50">Aguardando dados de orçamentos...</p>
             </div>
           ) : (
-            <div className="flex-1 w-full min-h-0 relative text-xs">
+            <div className="flex-1 w-full min-h-[200px] relative text-xs">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   layout="vertical"
@@ -599,7 +599,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: ViewType
             </div>
           ) : (
             <div className="flex-1 flex flex-col justify-between min-h-0">
-              <div className="w-full h-[140px] relative shrink-0">
+              <div className="w-full h-[140px] min-h-[140px] relative shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
